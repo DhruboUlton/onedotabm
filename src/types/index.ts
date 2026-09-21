@@ -452,3 +452,26 @@ export interface ProcessStep {
   activities?: string[];
   deliverables?: string[];
 }
+
+// ==========================================
+// BLOG
+// ==========================================
+
+/**
+ * A blog post as the public site renders it. Rows from `public.blog_posts`
+ * (authored in /admin/blog) are mapped onto this shape; the seed posts in
+ * src/data/blog.ts use it directly.
+ */
+export interface PublicBlogPost {
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  tags: string[];
+  /** Markdown, as written in the admin editor. */
+  content: string;
+  /** ISO date string. */
+  publishedAt: string;
+  author: string;
+  featuredImage?: string | null;
+}

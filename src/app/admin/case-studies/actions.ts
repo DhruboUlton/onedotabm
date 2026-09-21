@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createCaseStudyDb,
@@ -17,6 +19,9 @@ export interface ActionResponse<T = any> {
 export async function createCaseStudyAction(
   data: Partial<CaseStudyRecord>
 ): Promise<ActionResponse<CaseStudyRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.title?.trim() || !data.client_name?.trim() || !data.industry?.trim()) {
       return { success: false, error: 'Title, Client Name, and Industry are required.' };
@@ -55,6 +60,9 @@ export async function updateCaseStudyAction(
   id: string,
   data: Partial<CaseStudyRecord>
 ): Promise<ActionResponse<CaseStudyRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateCaseStudyDb(id, data);
     revalidatePath('/admin/case-studies');
@@ -68,6 +76,9 @@ export async function updateCaseStudyAction(
 }
 
 export async function deleteCaseStudyAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteCaseStudyDb(id);
     revalidatePath('/admin/case-studies');

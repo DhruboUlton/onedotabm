@@ -5,16 +5,60 @@ import { dbQuery } from '@/lib/db';
 import { ProfileRecord, UserRole } from '@/types/database';
 
 const SESSION_COOKIE = 'onedot_admin_session';
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
-export function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex');
+/**
+ * Required — a hardcoded fallback here would mean anyone who reads this file
+ * (or the public repo) can mint a valid owner session. Set it once:
+ *   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ */
+function getSessionSecret(): string {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret) {
+    throw new Error(
+      'ADMIN_SESSION_SECRET is not set. Admin auth is disabled until it is configured — see .env.local.'
+    );
+  }
+  return secret;
 }
 
+// ── Password hashing ────────────────────────────────────────────────────────
+// scrypt (Node stdlib, no dependency) with a random salt per password, stored
+// as "salt:hash". Existing accounts still carry the old unsalted-SHA-256
+// format (64 hex chars, no ':') from before this fix; verifyPassword accepts
+// both and re-hashes to the new format on successful legacy login, so every
+// account migrates itself the next time it signs in — no data migration to run.
+const SCRYPT_KEYLEN = 64;
+
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, SCRYPT_KEYLEN).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function isLegacySha256(hash: string): boolean {
+  return /^[0-9a-f]{64}$/i.test(hash);
+}
+
+export function verifyPassword(password: string, storedHash: string): boolean {
+  if (isLegacySha256(storedHash)) {
+    const candidate = crypto.createHash('sha256').update(password).digest('hex');
+    return crypto.timingSafeEqual(Buffer.from(candidate), Buffer.from(storedHash));
+  }
+
+  const [salt, hash] = storedHash.split(':');
+  if (!salt || !hash) return false;
+  const candidate = crypto.scryptSync(password, salt, SCRYPT_KEYLEN);
+  const expected = Buffer.from(hash, 'hex');
+  if (candidate.length !== expected.length) return false;
+  return crypto.timingSafeEqual(candidate, expected);
+}
+
+// ── Session tokens ───────────────────────────────────────────────────────────
 export function createSessionToken(userId: string, role: string): string {
   const payload = JSON.stringify({ userId, role, iat: Date.now() });
   const encoded = Buffer.from(payload).toString('base64url');
-  const secret = process.env.ADMIN_SESSION_SECRET || 'onedot_abm_secret_key_2026_production';
-  const hmac = crypto.createHmac('sha256', secret).update(encoded).digest('base64url');
+  const hmac = crypto.createHmac('sha256', getSessionSecret()).update(encoded).digest('base64url');
   return `${encoded}.${hmac}`;
 }
 
@@ -22,11 +66,22 @@ export function verifySessionToken(token: string): { userId: string; role: strin
   try {
     const [encoded, hmac] = token.split('.');
     if (!encoded || !hmac) return null;
-    const secret = process.env.ADMIN_SESSION_SECRET || 'onedot_abm_secret_key_2026_production';
-    const expected = crypto.createHmac('sha256', secret).update(encoded).digest('base64url');
-    if (hmac !== expected) return null;
+    const expected = crypto.createHmac('sha256', getSessionSecret()).update(encoded).digest('base64url');
+    const a = Buffer.from(hmac);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
     const json = Buffer.from(encoded, 'base64url').toString('utf8');
-    return JSON.parse(json);
+    const session = JSON.parse(json) as { userId: string; role: string; iat: number };
+
+    // A copied/leaked token should stop working once the session's own
+    // lifetime elapses, not live forever independent of the cookie's maxAge.
+    const ageSeconds = (Date.now() - session.iat) / 1000;
+    if (!Number.isFinite(session.iat) || ageSeconds > SESSION_MAX_AGE_SECONDS || ageSeconds < 0) {
+      return null;
+    }
+
+    return session;
   } catch {
     return null;
   }
@@ -64,7 +119,7 @@ export async function setAdminSession(profile: ProfileRecord) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: SESSION_MAX_AGE_SECONDS,
   });
 }
 

@@ -428,7 +428,7 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
                   <span className="text-gray-400">&rarr;</span>
                 </Link>
                 <Link
-                  href="/admin/invoices"
+                  href="/admin/billing"
                   className="flex items-center justify-between p-3 rounded-lg border border-[#E5E5E2] hover:bg-[#F0F0ED] text-xs font-medium text-[#111111] transition-colors"
                 >
                   <span className="flex items-center gap-2">
@@ -661,7 +661,7 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
               Billing History & Invoices ({client.invoices.length})
             </h3>
             <Link
-              href="/admin/invoices"
+              href="/admin/billing"
               className="text-xs font-semibold text-[#1400FF] hover:underline"
             >
               Invoices Hub &rarr;

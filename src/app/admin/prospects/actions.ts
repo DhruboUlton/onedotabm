@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createProspect,
@@ -18,6 +20,9 @@ export interface ActionResponse<T = any> {
 export async function createProspectAction(
   input: FormData | Partial<ProspectRecord>
 ): Promise<ActionResponse<ProspectRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     let payload: Partial<ProspectRecord> = {};
 
@@ -57,6 +62,9 @@ export async function updateProspectStageAction(
   id: string,
   stage: ProspectStage
 ): Promise<ActionResponse<ProspectRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateProspectStage(id, stage);
     revalidatePath('/admin/prospects');
@@ -72,6 +80,9 @@ export async function updateProspectAction(
   id: string,
   data: Partial<ProspectRecord>
 ): Promise<ActionResponse<ProspectRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateProspect(id, data);
     revalidatePath('/admin/prospects');
@@ -84,6 +95,9 @@ export async function updateProspectAction(
 }
 
 export async function deleteProspectAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteProspect(id);
     revalidatePath('/admin/prospects');

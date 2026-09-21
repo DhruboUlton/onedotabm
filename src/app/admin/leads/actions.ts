@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createLead,
@@ -19,6 +21,9 @@ export interface ActionResponse<T = any> {
 export async function createLeadAction(
   input: FormData | Partial<LeadRecord>
 ): Promise<ActionResponse<LeadRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     let payload: Partial<LeadRecord> = {};
 
@@ -62,6 +67,9 @@ export async function updateLeadStatusAction(
   id: string,
   status: LeadStatus
 ): Promise<ActionResponse<LeadRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateLeadStatus(id, status);
     revalidatePath('/admin/leads');
@@ -77,6 +85,9 @@ export async function updateLeadAction(
   id: string,
   data: Partial<LeadRecord>
 ): Promise<ActionResponse<LeadRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateLead(id, data);
     revalidatePath('/admin/leads');
@@ -89,6 +100,9 @@ export async function updateLeadAction(
 }
 
 export async function deleteLeadAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteLead(id);
     revalidatePath('/admin/leads');
@@ -103,6 +117,9 @@ export async function convertLeadAction(
   leadId: string,
   dealData: Partial<ProspectRecord> = {}
 ): Promise<ActionResponse<ProspectRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const prospect = await convertLeadToProspect(leadId, dealData);
     revalidatePath('/admin/leads');

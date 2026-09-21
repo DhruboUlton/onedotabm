@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createBlogPostDb,
@@ -17,6 +19,9 @@ export interface ActionResponse<T = any> {
 export async function createBlogPostAction(
   data: Partial<BlogPostRecord>
 ): Promise<ActionResponse<BlogPostRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.title?.trim() || !data.content?.trim()) {
       return { success: false, error: 'Title and Content are required.' };
@@ -50,6 +55,9 @@ export async function updateBlogPostAction(
   id: string,
   data: Partial<BlogPostRecord>
 ): Promise<ActionResponse<BlogPostRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateBlogPostDb(id, data);
     revalidatePath('/admin/blog');
@@ -62,6 +70,9 @@ export async function updateBlogPostAction(
 }
 
 export async function deleteBlogPostAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteBlogPostDb(id);
     revalidatePath('/admin/blog');

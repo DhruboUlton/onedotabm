@@ -1,14 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import {
   Lock,
-  Mail,
-  Key,
-  Eye,
-  EyeOff,
-  ShieldCheck,
   FolderGit2,
   FileCheck2,
   Receipt,
@@ -16,6 +11,7 @@ import {
   MessageSquare,
   HardDrive,
   ExternalLink,
+  ArrowUpRight,
 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
@@ -54,40 +50,9 @@ const portalModules = [
   },
 ];
 
+const PORTAL_URL = "https://dhruboduti.com/project-access";
+
 export default function ClientLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: "info" | "error"; text: string } | null>(null);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email.trim() || !password.trim()) {
-      setStatusMessage({
-        type: "error",
-        text: "Please enter your registered client email and password.",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setStatusMessage(null);
-
-    // Simulate authentication check
-    setTimeout(() => {
-      setIsLoading(false);
-      setStatusMessage({
-        type: "info",
-        text: "Redirecting to authenticated client portal environment...",
-      });
-      // Redirect to actual platform or access point
-      window.location.href = "https://dhruboduti.com/project-access";
-    }, 900);
-  };
-
   return (
     <div className="flex flex-col bg-[#F7F7F5] min-h-[calc(100vh-140px)]">
       {/* 01. Login Hero / Section */}
@@ -127,115 +92,30 @@ export default function ClientLoginPage() {
 
                 <div>
                   <h1 className="text-2xl font-semibold text-[#111111]">
-                    Client Portal Sign In
+                    Client Portal Access
                   </h1>
-                  <p className="text-xs text-[#555555] mt-1">
-                    Access your active projects, deliverables, quotations, and invoice records.
+                  <p className="text-xs text-[#555555] mt-1 leading-relaxed">
+                    The client portal runs on our founder&apos;s platform. Sign in there with the
+                    credentials issued at your project kickoff.
                   </p>
                 </div>
 
-                {statusMessage && (
-                  <div
-                    className={`p-3.5 rounded-xl text-xs flex items-center gap-2 ${
-                      statusMessage.type === "error"
-                        ? "bg-rose-50 border border-rose-200 text-rose-700"
-                        : "bg-[rgba(20,0,255,0.06)] border border-[rgba(20,0,255,0.18)] text-[#1400FF]"
-                    }`}
-                  >
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
-                    <span>{statusMessage.text}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="client-email"
-                      className="block text-xs font-mono uppercase tracking-wider text-[#111111] font-semibold mb-1.5"
-                    >
-                      Client Work Email
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-[#858585] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        id="client-email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="client@yourcompany.com"
-                        className="w-full pl-10 pr-4 py-2.5 text-sm bg-[#F7F7F5] border border-[#E5E5E2] rounded-xl text-[#111111] focus:outline-none focus:ring-2 focus:ring-[#1400FF] focus:border-transparent transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label
-                        htmlFor="client-password"
-                        className="block text-xs font-mono uppercase tracking-wider text-[#111111] font-semibold"
-                      >
-                        Password
-                      </label>
-                      <a
-                        href="mailto:contact@onedotabm.com?subject=Password%20Reset%20Request"
-                        className="text-[11px] font-mono text-[#1400FF] hover:underline"
-                      >
-                        Forgot password?
-                      </a>
-                    </div>
-                    <div className="relative">
-                      <Key className="w-4 h-4 text-[#858585] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        id="client-password"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full pl-10 pr-10 py-2.5 text-sm bg-[#F7F7F5] border border-[#E5E5E2] rounded-xl text-[#111111] focus:outline-none focus:ring-2 focus:ring-[#1400FF] focus:border-transparent transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858585] hover:text-[#111111]"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="rounded border-[#E5E5E2] text-[#1400FF] focus:ring-[#1400FF]"
-                      />
-                      <span className="text-[#555555]">Remember this device</span>
-                    </label>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="lg"
-                    disabled={isLoading}
-                    loading={isLoading}
-                    className="w-full justify-center"
-                  >
-                    Sign In to Portal
-                  </Button>
-                </form>
+                <a
+                  href={PORTAL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center justify-between gap-3 w-full px-5 py-4 rounded-xl bg-[#111111] text-white hover:bg-[#222222] active:scale-[0.99] active:duration-75 transition-all"
+                >
+                  <span className="text-sm font-medium">Continue to Client Portal</span>
+                  <ArrowUpRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </a>
 
                 <div className="pt-4 border-t border-[#E5E5E2] text-center">
                   <a
-                    href="https://dhruboduti.com/project-access"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="mailto:contact@onedotabm.com?subject=Client%20Portal%20Access"
                     className="inline-flex items-center gap-1.5 text-xs font-mono text-[#555555] hover:text-[#1400FF] transition-colors"
                   >
-                    <span>Direct Access via Founder Portal</span>
+                    <span>Lost your credentials? Email us</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>

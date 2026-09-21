@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createProject,
@@ -29,6 +31,9 @@ export interface ActionResponse<T = any> {
 export async function createProjectAction(
   data: Partial<ProjectRecord>
 ): Promise<ActionResponse<ProjectRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.project_name || !data.client_id || !data.service_type) {
       return {
@@ -66,6 +71,9 @@ export async function updateProjectAction(
   id: string,
   data: Partial<ProjectRecord>
 ): Promise<ActionResponse<ProjectRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateProject(id, data);
     revalidatePath('/admin/projects');
@@ -78,6 +86,9 @@ export async function updateProjectAction(
 }
 
 export async function deleteProjectAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteProject(id);
     revalidatePath('/admin/projects');
@@ -101,6 +112,9 @@ export async function createTaskAction(data: {
   priority?: any;
   due_date?: string | null;
 }): Promise<ActionResponse<ProjectTaskRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.title?.trim()) {
       return { success: false, error: 'Task title is required.' };
@@ -121,6 +135,9 @@ export async function updateTaskStatusAction(
   status: TaskStatus,
   projectId: string
 ): Promise<ActionResponse<ProjectTaskRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateTaskStatus(taskId, status);
     revalidatePath(`/admin/projects/${projectId}`);
@@ -137,6 +154,9 @@ export async function updateTaskAction(
   data: Partial<ProjectTaskRecord>,
   projectId: string
 ): Promise<ActionResponse<ProjectTaskRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateTask(taskId, data);
     revalidatePath(`/admin/projects/${projectId}`);
@@ -152,6 +172,9 @@ export async function deleteTaskAction(
   taskId: string,
   projectId: string
 ): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteTask(taskId);
     revalidatePath(`/admin/projects/${projectId}`);
@@ -174,6 +197,9 @@ export async function createMilestoneAction(data: {
   due_date?: string | null;
   status?: string;
 }): Promise<ActionResponse<ProjectMilestoneRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.title?.trim()) {
       return { success: false, error: 'Milestone title is required.' };
@@ -193,6 +219,9 @@ export async function updateMilestoneAction(
   data: Partial<ProjectMilestoneRecord>,
   projectId: string
 ): Promise<ActionResponse<ProjectMilestoneRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateMilestone(id, data);
     revalidatePath(`/admin/projects/${projectId}`);
@@ -207,6 +236,9 @@ export async function deleteMilestoneAction(
   id: string,
   projectId: string
 ): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteMilestone(id);
     revalidatePath(`/admin/projects/${projectId}`);

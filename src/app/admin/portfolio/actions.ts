@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createPortfolioItem,
@@ -17,6 +19,9 @@ export interface ActionResponse<T = any> {
 export async function createPortfolioItemAction(
   data: Partial<PortfolioItemRecord>
 ): Promise<ActionResponse<PortfolioItemRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.title?.trim() || !data.category) {
       return { success: false, error: 'Title and Category are required.' };
@@ -52,6 +57,9 @@ export async function updatePortfolioItemAction(
   id: string,
   data: Partial<PortfolioItemRecord>
 ): Promise<ActionResponse<PortfolioItemRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updatePortfolioItem(id, data);
     revalidatePath('/admin/portfolio');
@@ -68,6 +76,9 @@ export async function togglePortfolioPublishedAction(
   id: string,
   published: boolean
 ): Promise<ActionResponse<PortfolioItemRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updatePortfolioItem(id, { published });
     revalidatePath('/admin/portfolio');
@@ -81,6 +92,9 @@ export async function togglePortfolioPublishedAction(
 }
 
 export async function deletePortfolioItemAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deletePortfolioItem(id);
     revalidatePath('/admin/portfolio');

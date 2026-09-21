@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createClient,
@@ -17,6 +19,9 @@ export interface ActionResponse<T = any> {
 export async function createClientAction(
   input: FormData | Partial<ClientRecord>
 ): Promise<ActionResponse<ClientRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     let payload: Partial<ClientRecord> = {};
 
@@ -56,6 +61,9 @@ export async function updateClientAction(
   id: string,
   data: Partial<ClientRecord>
 ): Promise<ActionResponse<ClientRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateClient(id, data);
     revalidatePath('/admin/clients');
@@ -68,6 +76,9 @@ export async function updateClientAction(
 }
 
 export async function deleteClientAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteClient(id);
     revalidatePath('/admin/clients');

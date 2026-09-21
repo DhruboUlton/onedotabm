@@ -57,6 +57,7 @@ export const siteConfig: SiteConfig = {
       { label: 'Web Applications', href: '/web-applications' },
       { label: 'About', href: '/about' },
       { label: 'Pricing', href: '/pricing' },
+      { label: 'Blog', href: '/blog' },
       { label: 'Contact', href: '/contact' },
     ],
     actions: [

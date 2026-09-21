@@ -9,3 +9,4 @@ export * from './industries';
 export * from './process';
 export * from './pipeline';
 export * from './whyOneDot';
+export * from './blog';

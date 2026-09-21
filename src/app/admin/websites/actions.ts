@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createWebsite,
@@ -17,6 +19,9 @@ export interface ActionResponse<T = any> {
 export async function createWebsiteAction(
   data: Partial<WebsiteRecord>
 ): Promise<ActionResponse<WebsiteRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.website_name || !data.client_id || !data.domain || !data.technology) {
       return {
@@ -54,6 +59,9 @@ export async function updateWebsiteAction(
   id: string,
   data: Partial<WebsiteRecord>
 ): Promise<ActionResponse<WebsiteRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateWebsite(id, data);
     revalidatePath('/admin/websites');
@@ -66,6 +74,9 @@ export async function updateWebsiteAction(
 }
 
 export async function deleteWebsiteAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteWebsite(id);
     revalidatePath('/admin/websites');
