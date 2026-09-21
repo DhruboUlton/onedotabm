@@ -10,7 +10,20 @@ import { formatBlogDate } from "@/data/blog";
 import { getPublishedPostBySlug, getPublishedPosts } from "@/lib/services/publicBlogService";
 import { renderMarkdown, readingMinutes } from "@/lib/markdown";
 
-export const revalidate = 300;
+// Shelf rebuild: hourly on its own, or immediately when /admin/blog
+// mutates a post (see src/app/admin/blog/actions.ts).
+export const revalidate = 3600;
+
+// Without this the route is server-rendered on every request and the
+// revalidate window above does nothing — each visit hits the database.
+// Prerendering the known slugs puts each post on its own cache shelf;
+// dynamicParams keeps slugs published after this build working on demand.
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const posts = await getPublishedPosts();
+  return posts.map((post) => ({ slug: post.slug }));
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;

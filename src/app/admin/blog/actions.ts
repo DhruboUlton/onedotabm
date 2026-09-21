@@ -44,6 +44,8 @@ export async function createBlogPostAction(
     });
 
     revalidatePath('/admin/blog');
+    revalidatePath('/blog');
+    revalidatePath('/blog/[slug]', 'page');
     return { success: true, data: created };
   } catch (error: any) {
     console.error('Error creating blog post:', error);
@@ -62,6 +64,8 @@ export async function updateBlogPostAction(
     const updated = await updateBlogPostDb(id, data);
     revalidatePath('/admin/blog');
     revalidatePath(`/admin/blog/${id}`);
+    revalidatePath('/blog');
+    revalidatePath('/blog/[slug]', 'page');
     return { success: true, data: updated };
   } catch (error: any) {
     console.error('Error updating blog post:', error);
@@ -76,6 +80,8 @@ export async function deleteBlogPostAction(id: string): Promise<ActionResponse<b
   try {
     const deleted = await deleteBlogPostDb(id);
     revalidatePath('/admin/blog');
+    revalidatePath('/blog');
+    revalidatePath('/blog/[slug]', 'page');
     return { success: true, data: deleted };
   } catch (error: any) {
     console.error('Error deleting blog post:', error);

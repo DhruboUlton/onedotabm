@@ -10,7 +10,9 @@ import { formatBlogDate } from "@/data/blog";
 import { getPublishedPosts } from "@/lib/services/publicBlogService";
 import { readingMinutes } from "@/lib/markdown";
 
-export const revalidate = 300;
+// Shelf rebuild: hourly on its own, or immediately when /admin/blog
+// mutates a post (see src/app/admin/blog/actions.ts).
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Blog — Marketing & Web Development Notes",
