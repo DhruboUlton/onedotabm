@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { dbQuery } from '@/lib/db';
 import {
   PortfolioItemRecord,
@@ -63,9 +64,12 @@ export async function getPortfolioItems(filter?: {
   return res.rows;
 }
 
-export async function getPortfolioItemById(id: string): Promise<PortfolioItemRecord | null> {
+// cache(): generateMetadata() and the page component both call this with the
+// same id on every detail-page load; without dedup that's 2 round trips
+// (each costly on a cross-region DB) for one page render.
+export const getPortfolioItemById = cache(async (id: string): Promise<PortfolioItemRecord | null> => {
   const res = await dbQuery<PortfolioItemRecord>(
-    `SELECT 
+    `SELECT
        p.id,
        p.title,
        p.slug,
@@ -91,7 +95,7 @@ export async function getPortfolioItemById(id: string): Promise<PortfolioItemRec
   );
 
   return res.rows[0] || null;
-}
+});
 
 export async function createPortfolioItem(
   data: {
@@ -312,9 +316,10 @@ export async function getCaseStudiesDb(filter?: {
   }));
 }
 
-export async function getCaseStudyDbById(id: string): Promise<CaseStudyRecord | null> {
+// cache(): see getPortfolioItemById above — same double-fetch shape.
+export const getCaseStudyDbById = cache(async (id: string): Promise<CaseStudyRecord | null> => {
   const res = await dbQuery<CaseStudyRecord>(
-    `SELECT 
+    `SELECT
        id,
        title,
        slug,
@@ -347,7 +352,7 @@ export async function getCaseStudyDbById(id: string): Promise<CaseStudyRecord | 
     ...row,
     metrics: typeof row.metrics === 'string' ? JSON.parse(row.metrics) : row.metrics || [],
   };
-}
+});
 
 export async function createCaseStudyDb(
   data: {
@@ -592,9 +597,10 @@ export async function getBlogPostsDb(filter?: {
   return res.rows;
 }
 
-export async function getBlogPostDbById(id: string): Promise<BlogPostRecord | null> {
+// cache(): see getPortfolioItemById above — same double-fetch shape.
+export const getBlogPostDbById = cache(async (id: string): Promise<BlogPostRecord | null> => {
   const res = await dbQuery<BlogPostRecord & { author_name?: string }>(
-    `SELECT 
+    `SELECT
        b.id,
        b.title,
        b.slug,
@@ -619,7 +625,7 @@ export async function getBlogPostDbById(id: string): Promise<BlogPostRecord | nu
   );
 
   return res.rows[0] || null;
-}
+});
 
 export async function createBlogPostDb(
   data: {

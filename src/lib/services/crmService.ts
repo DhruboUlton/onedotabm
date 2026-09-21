@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { dbQuery } from '@/lib/db';
 import { logActivity } from '@/lib/services/activityService';
 import {
@@ -82,9 +83,12 @@ export async function getLeads(options: GetLeadsOptions = {}): Promise<LeadRecor
   return res.rows;
 }
 
-export async function getLeadById(id: string): Promise<LeadRecord | null> {
+// cache(): generateMetadata() and the page component both call this with the
+// same id on every detail-page load; without dedup that's 2 round trips
+// (each ~300ms+ on a cross-region DB) for what is really one query.
+export const getLeadById = cache(async (id: string): Promise<LeadRecord | null> => {
   const query = `
-    SELECT 
+    SELECT
       l.*,
       p.full_name AS assigned_to_name
     FROM public.leads l
@@ -93,7 +97,7 @@ export async function getLeadById(id: string): Promise<LeadRecord | null> {
   `;
   const res = await dbQuery<LeadRecord>(query, [id]);
   return res.rows[0] || null;
-}
+});
 
 export async function createLead(data: Partial<LeadRecord>): Promise<LeadRecord> {
   const res = await dbQuery<LeadRecord>(
@@ -404,9 +408,10 @@ export async function getProspects(options: GetProspectsOptions = {}): Promise<P
   return res.rows;
 }
 
-export async function getProspectById(id: string): Promise<ProspectRecord | null> {
+// cache(): see getLeadById above — same double-fetch shape.
+export const getProspectById = cache(async (id: string): Promise<ProspectRecord | null> => {
   const query = `
-    SELECT 
+    SELECT
       pr.*,
       p.full_name AS assigned_to_name
     FROM public.prospects pr
@@ -415,7 +420,7 @@ export async function getProspectById(id: string): Promise<ProspectRecord | null
   `;
   const res = await dbQuery<ProspectRecord>(query, [id]);
   return res.rows[0] || null;
-}
+});
 
 export async function createProspect(data: Partial<ProspectRecord>): Promise<ProspectRecord> {
   const res = await dbQuery<ProspectRecord>(
@@ -622,7 +627,8 @@ export async function getClients(options: GetClientsOptions = {}): Promise<Clien
   }));
 }
 
-export async function getClientById(id: string): Promise<ClientDetailRecord | null> {
+// cache(): see getLeadById above — same double-fetch shape.
+export const getClientById = cache(async (id: string): Promise<ClientDetailRecord | null> => {
   // 1. Fetch client info
   const clientQuery = `
     SELECT 
@@ -702,7 +708,7 @@ export async function getClientById(id: string): Promise<ClientDetailRecord | nu
       amount_due: Number(inv.amount_due || 0),
     })),
   };
-}
+});
 
 export async function createClient(data: Partial<ClientRecord>): Promise<ClientRecord> {
   const res = await dbQuery<ClientRecord>(

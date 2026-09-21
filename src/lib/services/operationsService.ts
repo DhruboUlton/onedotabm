@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { dbQuery } from '@/lib/db';
 import {
   ProjectRecord,
@@ -103,7 +104,10 @@ export async function getProjects(filter?: {
   return res.rows;
 }
 
-export async function getProjectById(id: string): Promise<ProjectRecord | null> {
+// cache(): generateMetadata() and the page component both call this with the
+// same id on every detail-page load; without dedup that's 2x the queries
+// below (each round trip costly on a cross-region DB) for one page render.
+export const getProjectById = cache(async (id: string): Promise<ProjectRecord | null> => {
   const res = await dbQuery<ProjectRecord>(
     `SELECT 
        p.id,
@@ -138,49 +142,50 @@ export async function getProjectById(id: string): Promise<ProjectRecord | null> 
 
   const project = res.rows[0];
 
-  // Fetch tasks
-  const tasksRes = await dbQuery<ProjectTaskRecord & { assigned_to_name?: string }>(
-    `SELECT 
-       pt.id,
-       pt.project_id,
-       pt.title,
-       pt.description,
-       pt.assigned_to,
-       pt.status,
-       pt.priority,
-       pt.due_date::text,
-       pt.created_at::text,
-       pt.updated_at::text,
-       pr.full_name AS assigned_to_name
-     FROM public.project_tasks pt
-     LEFT JOIN public.profiles pr ON pr.id = pt.assigned_to
-     WHERE pt.project_id = $1::uuid
-     ORDER BY pt.created_at ASC`,
-    [id]
-  );
-
-  // Fetch milestones
-  const milestonesRes = await dbQuery<ProjectMilestoneRecord>(
-    `SELECT 
-       id,
-       project_id,
-       title,
-       description,
-       due_date::text,
-       status,
-       created_at::text,
-       updated_at::text
-     FROM public.project_milestones
-     WHERE project_id = $1::uuid
-     ORDER BY due_date ASC NULLS LAST, created_at ASC`,
-    [id]
-  );
+  // Tasks and milestones are both keyed only on project_id — independent,
+  // so run them concurrently instead of paying two round trips back to back.
+  const [tasksRes, milestonesRes] = await Promise.all([
+    dbQuery<ProjectTaskRecord & { assigned_to_name?: string }>(
+      `SELECT
+         pt.id,
+         pt.project_id,
+         pt.title,
+         pt.description,
+         pt.assigned_to,
+         pt.status,
+         pt.priority,
+         pt.due_date::text,
+         pt.created_at::text,
+         pt.updated_at::text,
+         pr.full_name AS assigned_to_name
+       FROM public.project_tasks pt
+       LEFT JOIN public.profiles pr ON pr.id = pt.assigned_to
+       WHERE pt.project_id = $1::uuid
+       ORDER BY pt.created_at ASC`,
+      [id]
+    ),
+    dbQuery<ProjectMilestoneRecord>(
+      `SELECT
+         id,
+         project_id,
+         title,
+         description,
+         due_date::text,
+         status,
+         created_at::text,
+         updated_at::text
+       FROM public.project_milestones
+       WHERE project_id = $1::uuid
+       ORDER BY due_date ASC NULLS LAST, created_at ASC`,
+      [id]
+    ),
+  ]);
 
   project.tasks = tasksRes.rows;
   project.milestones = milestonesRes.rows;
 
   return project;
-}
+});
 
 export async function createProject(
   data: {
@@ -727,9 +732,10 @@ export async function getWebsites(filter?: {
   return res.rows;
 }
 
-export async function getWebsiteById(id: string): Promise<WebsiteRecord | null> {
+// cache(): see getProjectById above — same double-fetch shape.
+export const getWebsiteById = cache(async (id: string): Promise<WebsiteRecord | null> => {
   const res = await dbQuery<WebsiteRecord>(
-    `SELECT 
+    `SELECT
        w.id,
        w.website_name,
        w.client_id,
@@ -757,7 +763,7 @@ export async function getWebsiteById(id: string): Promise<WebsiteRecord | null> 
   );
 
   return res.rows[0] || null;
-}
+});
 
 export async function createWebsite(
   data: {

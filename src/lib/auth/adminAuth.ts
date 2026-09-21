@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import crypto from 'crypto';
@@ -87,7 +88,12 @@ export function verifySessionToken(token: string): { userId: string; role: strin
   }
 }
 
-export async function getCurrentAdmin(): Promise<ProfileRecord | null> {
+// cache(): admin/layout.tsx calls this on every /admin/* request for the auth
+// check; several pages (dashboard included) call it again for the greeting /
+// role display. Without dedup that's 2 round trips just to know who's signed
+// in, on literally every admin page load. React's per-request cache collapses
+// repeat calls (same zero args) into the one query below.
+export const getCurrentAdmin = cache(async (): Promise<ProfileRecord | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -101,7 +107,7 @@ export async function getCurrentAdmin(): Promise<ProfileRecord | null> {
   );
 
   return res.rows[0] || null;
-}
+});
 
 export async function requireAdmin(): Promise<ProfileRecord> {
   const admin = await getCurrentAdmin();
