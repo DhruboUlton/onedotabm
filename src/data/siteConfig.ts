@@ -1,0 +1,131 @@
+import { SiteConfig } from '@/types';
+
+export const siteConfig: SiteConfig = {
+  brandName: 'OneDot ABM',
+  legalName: 'OneDot ABM',
+  positioning: 'Marketing Agency & Web Development',
+  tagline: 'Marketing that creates demand. Websites and web systems built for business.',
+  supportingStatement:
+    'OneDot ABM combines customer acquisition and digital product development so businesses can work with one focused partner for both growth campaigns and the digital infrastructure that converts them.',
+  founder: {
+    name: 'Dhrubo Duti Biswas',
+    title: 'Founder & Lead Performance Strategist',
+    bio: 'Performance marketer and web developer specializing in high-ROAS advertising architectures, full-funnel customer acquisition systems, and custom web applications.',
+    portfolioUrl: 'https://dhruboduti.com/',
+  },
+  contact: {
+    email: 'contact@onedotabm.com',
+    location: 'Dhaka, Bangladesh · Serving Global Clients',
+    responseTime: 'Within 24 hours',
+    availabilityStatus: 'Available for new client projects',
+  },
+  socialLinks: [
+    {
+      platform: 'linkedin',
+      label: 'LinkedIn',
+      url: 'https://www.linkedin.com/in/dhrubodutibiswas/',
+      username: 'dhrubodutibiswas',
+    },
+    {
+      platform: 'facebook',
+      label: 'Facebook',
+      url: 'https://www.facebook.com/dhrubo.duti',
+      username: 'dhrubo.duti',
+    },
+    {
+      platform: 'instagram',
+      label: 'Instagram',
+      url: 'https://www.instagram.com/dhrubo.duti/',
+      username: 'dhrubo.duti',
+    },
+    {
+      platform: 'upwork',
+      label: 'Upwork',
+      url: 'https://www.upwork.com/freelancers/~0184631d2f05ef6bc2?mp_source=share',
+    },
+    {
+      platform: 'fiverr',
+      label: 'Fiverr',
+      url: 'https://www.fiverr.com/s/P2zGV90',
+    },
+  ],
+  navigation: {
+    main: [
+      { label: 'Services', href: '/services' },
+      { label: 'Work', href: '/work' },
+      { label: 'Case Studies', href: '/case-studies' },
+      { label: 'Web Applications', href: '/web-applications' },
+      { label: 'About', href: '/about' },
+      { label: 'Pricing', href: '/pricing' },
+      { label: 'Contact', href: '/contact' },
+    ],
+    actions: [
+      {
+        label: 'Client Login',
+        href: 'https://dhruboduti.com/project-access',
+        isExternal: true,
+      },
+      {
+        label: 'Start a Project',
+        href: '/contact',
+      },
+    ],
+    footerServices: [
+      { label: 'Meta & Facebook Ads', href: '/services/meta-ads' },
+      { label: 'Google Ads PPC', href: '/services/google-ads' },
+      { label: 'Performance Marketing', href: '/services/performance-marketing' },
+      { label: 'Lead Generation Systems', href: '/services/lead-generation' },
+      { label: 'Funnel Strategy & CRO', href: '/services/funnel-strategy' },
+      { label: 'Creative Strategy & Ad Design', href: '/services/creative-strategy' },
+      { label: 'Branding & Identity', href: '/services/branding' },
+      { label: 'SEO & Search Optimization', href: '/services/seo' },
+      { label: 'Web Design & Development', href: '/services/web-development' },
+      { label: 'Custom Web Applications', href: '/services/custom-web-apps' },
+    ],
+    footerCompany: [
+      { label: 'About OneDot ABM', href: '/about' },
+      { label: 'Work & Portfolio', href: '/work' },
+      { label: 'Case Studies', href: '/case-studies' },
+      { label: 'Web Applications Showcase', href: '/web-applications' },
+      { label: 'Pricing & Engagements', href: '/pricing' },
+      { label: 'Contact & Inquiry', href: '/contact' },
+      { label: 'Book Strategy Call', href: '/contact#book-call' },
+      {
+        label: 'Client Portal',
+        href: 'https://dhruboduti.com/project-access',
+        isExternal: true,
+      },
+    ],
+    footerLegal: [
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms of Service', href: '/terms' },
+    ],
+  },
+  meta: {
+    title: 'OneDot ABM — Marketing Agency & Web Development',
+    defaultTitle: 'OneDot ABM | Marketing Agency & Web Development',
+    titleTemplate: '%s | OneDot ABM',
+    description:
+      'OneDot ABM combines performance marketing (Meta Ads, Google Ads, Lead Gen) and custom web development (Next.js, React, Laravel) to acquire customers and build digital business infrastructure.',
+    siteUrl: 'https://onedotabm.com',
+    ogImage: '/og-image.png',
+    creator: 'Dhrubo Duti Biswas',
+    keywords: [
+      'OneDot ABM',
+      'Marketing Agency',
+      'Web Development Company',
+      'Performance Marketing',
+      'Meta Ads Agency',
+      'Facebook Ads Specialist',
+      'Google Ads Agency',
+      'Lead Generation Agency',
+      'Custom Web Applications',
+      'Next.js Web Development',
+      'E-commerce Development',
+      'Laravel Development',
+      'Dhrubo Duti Biswas',
+    ],
+    themeColor: '#F7F7F5',
+  },
+  clientPortalUrl: 'https://dhruboduti.com/project-access',
+};
