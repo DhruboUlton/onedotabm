@@ -21,9 +21,6 @@ export const metadata: Metadata = {
   },
   description:
     "OneDot ABM combines strategic marketing and custom web development to help businesses attract customers, build stronger digital experiences, and achieve measurable growth.",
-  icons: {
-    icon: "/logo.png",
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
