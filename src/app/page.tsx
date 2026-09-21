@@ -1,5 +1,4 @@
 import React from "react";
-import { LoadingScreen } from "@/components/layout/LoadingScreen";
 import {
   Hero,
   MetricsBar,
@@ -21,9 +20,6 @@ import {
 export default function HomePage() {
   return (
     <>
-      {/* 00. Initial Loading Screen Experience */}
-      <LoadingScreen />
-
       {/* 01. Hero Section */}
       <Hero />
 

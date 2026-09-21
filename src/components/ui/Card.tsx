@@ -27,7 +27,7 @@ export function Card({
         "rounded-2xl transition-all duration-300",
         surfaceClasses[surface],
         hoverEffect &&
-          "hover:border-[#D8D8D4] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-0.5",
+          "hover:border-[#D8D8D4] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.995] active:duration-75",
         className
       )}
       {...props}

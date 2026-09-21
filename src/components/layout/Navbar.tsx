@@ -138,7 +138,7 @@ export function Navbar() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="text-[#555555] hover:text-[#111111] transition-colors relative py-1 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1400FF] rounded-sm"
+                className="text-[#555555] hover:text-[#111111] active:text-[#1400FF] transition-colors relative py-1 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1400FF] rounded-sm"
               >
                 <span>{item.label}</span>
                 <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#1400FF] transition-all duration-200 group-hover:w-full" />
@@ -247,7 +247,7 @@ export function Navbar() {
                 key={item.label}
                 href={item.href}
                 onClick={closeMenu}
-                className="group flex items-baseline justify-between py-2 border-b border-[#E5E5E2]/50 hover:border-[#111111] transition-colors"
+                className="group flex items-baseline justify-between py-2 border-b border-[#E5E5E2]/50 hover:border-[#111111] active:border-[#1400FF] active:opacity-70 transition-colors"
               >
                 <div className="flex items-baseline gap-3">
                   <span className="font-mono text-xs text-[#858585] group-hover:text-[#1400FF] transition-colors">

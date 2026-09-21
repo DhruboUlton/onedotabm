@@ -1,26 +1,90 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { WEB_DEV_CAPABILITIES, TECHNOLOGIES_LIST } from "@/data";
-import { WebDevCapability } from "@/types";
 import {
-  Terminal,
+  Globe,
+  ShoppingCart,
+  Cpu,
+  LayoutDashboard,
+  ShieldCheck,
+  CreditCard,
   ArrowRight,
-  CheckCircle2,
+  Code2,
 } from "lucide-react";
 
+interface WebCard {
+  id: string;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  tech: string;
+}
+
+const WEB_DEV_CARDS: WebCard[] = [
+  {
+    id: "business-websites",
+    icon: Globe,
+    title: "Business Websites",
+    description: "Fast, modern editorial sites tailored to brand authority and lead conversion.",
+    tech: "Next.js • React",
+  },
+  {
+    id: "e-commerce",
+    icon: ShoppingCart,
+    title: "E-Commerce Platforms",
+    description: "Custom storefronts with frictionless checkout and back-office order workflows.",
+    tech: "Next.js • Prisma",
+  },
+  {
+    id: "web-applications",
+    icon: Cpu,
+    title: "Web Applications",
+    description: "Bespoke full-stack platforms engineered around complex business operations.",
+    tech: "Laravel • React",
+  },
+  {
+    id: "admin-panels",
+    icon: LayoutDashboard,
+    title: "Admin Panels",
+    description: "Operational back-office dashboards with granular role-based permissions.",
+    tech: "Postgres • APIs",
+  },
+  {
+    id: "client-portals",
+    icon: ShieldCheck,
+    title: "Client Portals",
+    description: "Secure customer self-service workspaces with real-time status and telemetry.",
+    tech: "TypeScript • Auth",
+  },
+  {
+    id: "api-integrations",
+    icon: CreditCard,
+    title: "API & Payment Integrations",
+    description: "Resilient bKash, Nagad, Stripe, and third-party webhook integrations.",
+    tech: "CAPI • Node.js",
+  },
+];
+
+const TECH_STACK = [
+  { name: "Next.js", category: "Framework", line: "Server Components & Edge rendering" },
+  { name: "React", category: "Frontend", line: "High-performance reactive interfaces" },
+  { name: "TypeScript", category: "Language", line: "End-to-end type safety & reliability" },
+  { name: "Laravel", category: "Backend", line: "Robust application architecture & auth" },
+  { name: "Node.js", category: "Runtime", line: "High-throughput asynchronous APIs" },
+  { name: "PostgreSQL", category: "Database", line: "Relational ACID data integrity" },
+  { name: "Supabase", category: "Backend", line: "Real-time Postgres database & storage" },
+  { name: "Tailwind", category: "Styling", line: "Utility-first design tokens" },
+];
+
 export function WebDevSection() {
-  const [activeCapability, setActiveCapability] = useState<WebDevCapability>(
-    WEB_DEV_CAPABILITIES[0]
-  );
+  const [hoveredTech, setHoveredTech] = useState<string | null>(null);
 
   return (
-    <section id="development" className="py-20 md:py-28 bg-[#F7F7F5] border-b border-[#E5E5E2]">
+    <section id="development" className="py-16 md:py-24 bg-[#F7F7F5] border-b border-[#E5E5E2]">
       <Container>
         {/* Section Heading */}
         <SectionHeading
@@ -29,167 +93,105 @@ export function WebDevSection() {
           badgeVariant="subtle"
           title="Websites & Web Systems."
           highlight="Built for Business."
-          description="We engineer custom websites, e-commerce engines, and full-stack web applications. No slow generic templates. Every system is engineered for sub-second speeds, conversion, and operational control."
+          description="Custom websites, e-commerce engines, and full-stack web applications engineered for sub-second speeds and conversion."
           action={
-            <Button href="#contact" variant="primary" arrow="horizontal">
-              Start a Web Project
+            <Button href="/services/web-development" variant="primary" arrow="horizontal">
+              View Architecture
             </Button>
           }
-          className="mb-14"
+          className="mb-12"
         />
 
-        {/* 6 Capabilities Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          {WEB_DEV_CAPABILITIES.map((cap) => {
-            const isSelected = activeCapability.id === cap.id;
+        {/* 6 Minimalist Visual Service Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
+          {WEB_DEV_CARDS.map((card) => {
+            const Icon = card.icon;
             return (
-              <Card
-                key={cap.id}
-                onClick={() => setActiveCapability(cap)}
-                hoverEffect
-                surface="white"
-                className={`p-6 sm:p-8 cursor-pointer flex flex-col justify-between transition-all duration-300 ${
-                  isSelected ? "border-[#111111] ring-1 ring-[#111111]" : ""
-                }`}
+              <div
+                key={card.id}
+                className="group p-6 rounded-2xl border border-[#E5E5E2] bg-[#FFFFFF] transition-all duration-200 hover:border-[#111111] hover:shadow-xs flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-mono text-[#858585] uppercase tracking-wider">
-                      DEV // 0{WEB_DEV_CAPABILITIES.indexOf(cap) + 1}
-                    </span>
-                    <div className="flex gap-1">
-                      {cap.technologies.slice(0, 2).map((tech) => (
-                        <span
-                          key={tech}
-                          className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#F0F0ED] text-[#555555]"
-                        >
-                          {tech}
-                        </span>
-                      ))}
+                    <div className="w-10 h-10 rounded-xl bg-[#F7F7F5] border border-[#E5E5E2] flex items-center justify-center text-[#111111] group-hover:text-[#1400FF] group-hover:scale-105 transition-all">
+                      <Icon className="w-5 h-5" />
                     </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#F0F0ED] text-[#555555]">
+                      {card.tech}
+                    </span>
                   </div>
 
-                  <h3 className="text-xl font-bold text-[#111111] tracking-tight mb-2">
-                    {cap.title}
+                  <h3 className="text-lg font-bold text-[#111111] tracking-tight mb-2 group-hover:text-[#1400FF] transition-colors">
+                    {card.title}
                   </h3>
 
-                  <p className="text-sm text-[#555555] leading-relaxed mb-6">
-                    {cap.shortDescription}
+                  <p className="text-xs sm:text-sm text-[#555555] leading-relaxed">
+                    {card.description}
                   </p>
                 </div>
 
-                <div className="pt-4 border-t border-[#E5E5E2] flex items-center justify-between text-xs">
-                  <span className="text-[#858585] font-mono">
-                    {cap.deliverables.length} Deliverables Included
-                  </span>
-                  <span className="inline-flex items-center gap-1 font-semibold text-[#111111] group-hover:text-[#1400FF]">
-                    <span>View Scope</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
+                <div className="pt-4 mt-4 border-t border-[#E5E5E2] flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-[#858585]">Full Stack</span>
+                  <Link
+                    href={`/services/web-development#${card.id}`}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#111111] group-hover:text-[#1400FF]"
+                  >
+                    <span>Details</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>
 
-        {/* Active Capability Deep Dive Banner */}
-        <div className="rounded-3xl border border-[#D8D8D4] bg-[#FFFFFF] p-6 sm:p-8 lg:p-10 mb-16 shadow-xs">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-[#E5E5E2]">
+        {/* Visual Technology Stack Showcase (Section 8) */}
+        <div className="rounded-3xl border border-[#D8D8D4] bg-[#FFFFFF] p-6 sm:p-8 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-[#E5E5E2] gap-2">
             <div>
-              <div className="inline-flex items-center gap-2 mb-2">
-                <Badge variant="dark">DETAILED SPECIFICATION</Badge>
-                <span className="text-xs font-mono text-[#858585]">
-                  {activeCapability.title.toUpperCase()}
+              <div className="flex items-center gap-2 mb-1">
+                <Code2 className="w-4 h-4 text-[#1400FF]" />
+                <span className="text-[11px] font-mono uppercase tracking-widest text-[#858585] font-semibold">
+                  TECHNOLOGY SELECTION
                 </span>
               </div>
-              <h4 className="text-2xl font-bold text-[#111111] tracking-tight">
-                {activeCapability.title}
+              <h4 className="text-xl font-bold text-[#111111] tracking-tight">
+                Built Around the Right Stack.
               </h4>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-mono text-[#555555] mr-2">Technologies Used:</span>
-              {activeCapability.technologies.map((t) => (
-                <span
-                  key={t}
-                  className="px-2.5 py-1 text-xs font-mono bg-[#F7F7F5] border border-[#E5E5E2] rounded-md text-[#111111] font-medium"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
-            <div className="lg:col-span-6 space-y-4">
-              <h5 className="text-xs font-mono uppercase tracking-widest text-[#858585] font-semibold">
-                Architecture & Commercial Intent
-              </h5>
-              <p className="text-sm sm:text-base text-[#555555] leading-relaxed">
-                {activeCapability.fullDescription}
-              </p>
-              <div className="pt-2">
-                <Button
-                  href={`#contact?service=${activeCapability.slug}`}
-                  variant="primary"
-                  size="sm"
-                  arrow="horizontal"
-                >
-                  Request Technical Proposal
-                </Button>
-              </div>
-            </div>
-
-            <div className="lg:col-span-6 bg-[#F7F7F5] rounded-2xl p-6 border border-[#E5E5E2]">
-              <h5 className="text-xs font-mono uppercase tracking-widest text-[#111111] font-semibold mb-4 flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-[#1400FF]" />
-                <span>Scope Deliverables</span>
-              </h5>
-              <ul className="space-y-2.5">
-                {activeCapability.deliverables.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-[#555555]">
-                    <CheckCircle2 className="w-4 h-4 text-[#1400FF] shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Technology Stack Showcase */}
-        <div className="rounded-3xl border border-[#E5E5E2] bg-[#FFFFFF] p-6 sm:p-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#E5E5E2]">
-            <div>
-              <span className="text-xs font-mono uppercase tracking-widest text-[#858585] font-semibold">
-                TECHNOLOGY SELECTION PHILOSOPHY
-              </span>
-              <h4 className="text-xl font-bold text-[#111111] tracking-tight mt-1">
-                Right Technology for the Right Requirement
-              </h4>
-            </div>
-            <p className="text-xs sm:text-sm text-[#555555] max-w-md">
-              We never force your project into a rigid one-size-fits-all stack. We choose between Next.js, React, Laravel, PHP, Node.js, and Prisma based on your scalability and business model.
+            <p className="text-xs sm:text-sm text-[#555555] font-mono">
+              We select technology around the business requirement.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4 pt-6">
-            {TECHNOLOGIES_LIST.map((tech) => (
-              <div
-                key={tech.name}
-                className="p-4 rounded-xl border border-[#E5E5E2] bg-[#F7F7F5] flex flex-col justify-between hover:border-[#111111] transition-colors"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-sm text-[#111111]">{tech.name}</span>
-                    <span className="text-[10px] font-mono text-[#1400FF] bg-[#1400FF]/10 px-2 py-0.5 rounded">
+          {/* Minimalist Technology Badges Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {TECH_STACK.map((tech) => {
+              const isHovered = hoveredTech === tech.name;
+
+              return (
+                <div
+                  key={tech.name}
+                  onMouseEnter={() => setHoveredTech(tech.name)}
+                  onMouseLeave={() => setHoveredTech(null)}
+                  className={`p-3.5 rounded-xl border transition-all duration-200 cursor-default ${
+                    isHovered
+                      ? "border-[#1400FF] bg-[#F7F7F5] shadow-2xs -translate-y-0.5"
+                      : "border-[#E5E5E2] bg-[#FDFDFD]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-sm text-[#111111] font-mono">{tech.name}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E5E5E2]/60 text-[#555555]">
                       {tech.category}
                     </span>
                   </div>
-                  <p className="text-xs text-[#555555] mt-1 line-clamp-2">{tech.role}</p>
+                  <div className="text-[11px] text-[#555555] line-clamp-1">
+                    {tech.line}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </Container>

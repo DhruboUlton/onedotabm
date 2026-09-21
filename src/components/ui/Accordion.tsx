@@ -123,6 +123,7 @@ export function AccordionTrigger({
         onClick={() => ctx.toggleValue(itemCtx.value)}
         className={cn(
           "w-full py-5 sm:py-6 flex items-center justify-between text-left cursor-pointer",
+          "active:bg-[#F0F0ED] active:duration-75",
           "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1400FF] focus-visible:ring-offset-2",
           className
         )}

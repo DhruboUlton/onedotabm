@@ -4,16 +4,62 @@ import React, { useState } from "react";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Button } from "@/components/ui/Button";
-import { FAQ_DATA } from "@/data";
-import { FaqCategory } from "@/types";
 import { ChevronDown } from "lucide-react";
 
-type FaqFilter = "All" | FaqCategory;
+interface FaqItemSimple {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+const FAQ_ITEMS: FaqItemSimple[] = [
+  {
+    id: "why-combine",
+    question: "What makes OneDot ABM different from a typical digital agency?",
+    answer:
+      "Most agencies isolate marketing from development. We combine paid acquisition with custom web engineering under one roof, ensuring ads drive traffic to high-speed systems built specifically to convert it.",
+  },
+  {
+    id: "standalone-services",
+    question: "Can we hire OneDot ABM for only marketing or only web development?",
+    answer:
+      "Yes. While our combined model produces the strongest results, we frequently manage standalone paid advertising campaigns or engineer custom web applications independently.",
+  },
+  {
+    id: "minimum-budget",
+    question: "What is your recommended minimum advertising budget?",
+    answer:
+      "We recommend a minimum monthly ad spend of $1,000–$2,000 (or local equivalent) paid directly to ad platforms to ensure sufficient conversion data for algorithmic optimization and creative testing.",
+  },
+  {
+    id: "timeline-results",
+    question: "How quickly do we see results from advertising campaigns?",
+    answer:
+      "Initial conversion signals and lead flow typically start within the first 7–14 days. Compounding scale and profitable ROAS usually solidify between days 30 and 60 as creative testing matures.",
+  },
+  {
+    id: "custom-vs-templates",
+    question: "Why build custom web applications instead of using WordPress or Shopify?",
+    answer:
+      "Custom Next.js and Laravel applications achieve sub-second load times, bespoke operational workflows (RBAC, custom checkout, inventory alerts), and zero recurring plugin vulnerabilities or template bloat.",
+  },
+  {
+    id: "conversion-tracking",
+    question: "How do you handle iOS privacy restrictions and attribution loss?",
+    answer:
+      "We build direct server-to-server Meta Conversions API (CAPI) and GA4 telemetry into web endpoints, bypassing ad-blockers and browser privacy limits to feed clean conversion signals to ad algorithms.",
+  },
+  {
+    id: "international-clients",
+    question: "Do you work with international clients outside of Bangladesh?",
+    answer:
+      "Yes. We collaborate with brands and startups globally across North America, Europe, the Middle East, and Asia-Pacific through streamlined async updates, milestone reviews, and secure client access.",
+  },
+];
 
 export function FaqSection() {
-  const [activeCategory, setActiveCategory] = useState<FaqFilter>("All");
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({
-    "why-combine": true, // open first item by default
+    "why-combine": true,
   });
 
   const toggleItem = (id: string) => {
@@ -23,21 +69,8 @@ export function FaqSection() {
     }));
   };
 
-  const filteredFaqs =
-    activeCategory === "All"
-      ? FAQ_DATA
-      : FAQ_DATA.filter((f) => f.category === activeCategory);
-
-  const categories: FaqFilter[] = [
-    "All",
-    "General",
-    "Marketing",
-    "Web Development",
-    "Process",
-  ];
-
   return (
-    <section id="faq" className="py-20 md:py-28 bg-[#FFFFFF] border-b border-[#E5E5E2]">
+    <section id="faq" className="py-16 md:py-24 bg-[#FFFFFF] border-b border-[#E5E5E2]">
       <Container size="narrow">
         {/* Section Heading */}
         <SectionHeading
@@ -46,68 +79,38 @@ export function FaqSection() {
           badgeVariant="subtle"
           title="Clear Answers."
           highlight="No Jargon."
-          description="Straightforward answers about our capabilities, pricing models, technology choices, and how our integrated team collaborates with yours."
+          description="Straightforward answers regarding capabilities, budgets, timelines, and integrated execution."
           align="center"
-          className="mb-12"
+          className="mb-10"
         />
 
-        {/* Category Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
-          {categories.map((cat) => {
-            const isActive = activeCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? "bg-[#111111] text-white shadow-xs font-semibold"
-                    : "bg-[#F0F0ED] text-[#555555] hover:text-[#111111] hover:bg-[#E5E5E2]"
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Editorial Accordion List */}
+        {/* Clean Accordion List (Section 17: 6-8 Most Useful Questions, Concise Answers) */}
         <div className="divide-y divide-[#E5E5E2] border-t border-b border-[#E5E5E2]">
-          {filteredFaqs.map((faq) => {
+          {FAQ_ITEMS.map((faq) => {
             const isOpen = !!openItems[faq.id];
 
             return (
-              <div key={faq.id} className="py-5 sm:py-6 transition-colors">
+              <div key={faq.id} className="py-4 sm:py-5 transition-colors">
                 <button
                   onClick={() => toggleItem(faq.id)}
                   className="w-full text-left flex items-start justify-between gap-4 cursor-pointer select-none group"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="text-xs font-mono text-[#858585] mt-1 shrink-0">
-                      Q:
-                    </span>
-                    <h3 className="text-base sm:text-lg font-bold text-[#111111] group-hover:text-[#1400FF] transition-colors leading-snug">
-                      {faq.question}
-                    </h3>
-                  </div>
+                  <span className="text-sm sm:text-base font-bold text-[#111111] group-hover:text-[#1400FF] transition-colors leading-snug">
+                    {faq.question}
+                  </span>
 
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center border border-[#E5E5E2] shrink-0 transition-transform duration-200 ${
+                    className={`w-6 h-6 rounded-full flex items-center justify-center border border-[#E5E5E2] shrink-0 transition-transform duration-200 ${
                       isOpen ? "rotate-180 bg-[#111111] text-white border-[#111111]" : "text-[#555555]"
                     }`}
                   >
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </div>
                 </button>
 
                 {isOpen && (
-                  <div className="pl-6 sm:pl-7 pr-8 pt-3 text-sm sm:text-base text-[#555555] leading-relaxed animate-in fade-in-50 duration-150">
+                  <div className="pr-6 pt-2.5 text-xs sm:text-sm text-[#555555] leading-relaxed animate-in fade-in-50 duration-150">
                     <p>{faq.answer}</p>
-                    <div className="mt-3">
-                      <span className="text-[10px] font-mono text-[#858585] uppercase tracking-wider bg-[#F0F0ED] px-2 py-0.5 rounded">
-                        Category: {faq.category}
-                      </span>
-                    </div>
                   </div>
                 )}
               </div>
@@ -116,15 +119,15 @@ export function FaqSection() {
         </div>
 
         {/* Bottom Helper */}
-        <div className="mt-12 text-center p-6 rounded-2xl bg-[#F7F7F5] border border-[#E5E5E2]">
-          <h4 className="text-sm font-bold text-[#111111] mb-1">
-            Have a question that isn&apos;t answered here?
-          </h4>
-          <p className="text-xs text-[#555555] mb-4">
-            We are always happy to discuss specifics regarding your ad accounts, technology stack, or custom scope.
+        <div className="mt-10 text-center p-5 rounded-2xl bg-[#F7F7F5] border border-[#E5E5E2]">
+          <span className="text-xs font-bold text-[#111111] block mb-1">
+            Have a specific technical or campaign question?
+          </span>
+          <p className="text-xs text-[#555555] mb-3">
+            We are always happy to discuss unit economics, tech stacks, or custom scope.
           </p>
           <Button href="#contact" variant="outline" size="sm" arrow="horizontal">
-            Ask a Direct Question
+            Ask a Question
           </Button>
         </div>
       </Container>

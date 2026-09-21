@@ -120,14 +120,62 @@ body {
   border-top: 1px solid #E5E5E2;
 }
 
-/* Accessibility: Respect prefers-reduced-motion */
+/* Enter animations — the subset of tailwindcss-animate class names this app uses.
+   Duration comes from Tailwind's `duration-*` utility via --tw-duration. */
+@keyframes enter-fade {
+  from { opacity: 0; }
+}
+
+@keyframes enter-fade-50 {
+  from { opacity: 0.5; }
+}
+
+@keyframes enter-zoom-95 {
+  from { transform: scale(0.95); }
+}
+
+@keyframes enter-slide-from-left {
+  from { transform: translateX(-100%); }
+}
+
+.animate-in {
+  animation-name: enter-fade;
+  animation-duration: var(--tw-duration, 200ms);
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.animate-in.fade-in-50 {
+  animation-name: enter-fade-50;
+}
+
+.animate-in.zoom-in-95 {
+  animation-name: enter-fade, enter-zoom-95;
+}
+
+.animate-in.slide-in-from-left {
+  animation-name: enter-fade, enter-slide-from-left;
+}
+
+.animate-fadeIn {
+  animation: enter-fade 200ms ease-out both;
+}
+
+/* Accessibility: Respect prefers-reduced-motion.
+   Reduced motion means no vestibular movement — not no feedback. Transforms and
+   scroll animation are dropped; opacity/color transitions stay so presses,
+   focus and state changes still read. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, box-shadow !important;
+    transition-duration: 150ms !important;
+  }
+
+  html {
     scroll-behavior: auto !important;
   }
 }

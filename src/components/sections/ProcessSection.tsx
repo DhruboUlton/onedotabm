@@ -1,21 +1,62 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Button } from "@/components/ui/Button";
-import { PROCESS_STEPS } from "@/data";
-import { CheckCircle2, Clock, ChevronDown, UserCheck } from "lucide-react";
+import {
+  Compass,
+  Target,
+  Code2,
+  Rocket,
+  TrendingUp,
+  ArrowRight,
+} from "lucide-react";
+
+interface ProcessStep {
+  number: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  explanation: string;
+}
+
+const TIMELINE_STEPS: ProcessStep[] = [
+  {
+    number: "01",
+    title: "Discover",
+    icon: Compass,
+    explanation: "Align on unit economics, commercial targets, and technical requirements.",
+  },
+  {
+    number: "02",
+    title: "Strategize",
+    icon: Target,
+    explanation: "Map acquisition funnels, conversion architecture, and sprint timelines.",
+  },
+  {
+    number: "03",
+    title: "Build",
+    icon: Code2,
+    explanation: "Engineer custom web systems and produce high-converting ad creative.",
+  },
+  {
+    number: "04",
+    title: "Launch",
+    icon: Rocket,
+    explanation: "Deploy infrastructure, configure CAPI telemetry, and activate paid campaigns.",
+  },
+  {
+    number: "05",
+    title: "Optimize",
+    icon: TrendingUp,
+    explanation: "Analyze attribution data, prune inefficient spend, and scale winning assets.",
+  },
+];
 
 export function ProcessSection() {
-  const [expandedStep, setExpandedStep] = useState<string>("01");
-
-  const toggleStep = (step: string) => {
-    setExpandedStep((prev) => (prev === step ? "" : step));
-  };
-
   return (
-    <section id="process" className="py-20 md:py-28 bg-[#F7F7F5] border-b border-[#E5E5E2]">
+    <section id="process" className="py-16 md:py-24 bg-[#F7F7F5] border-b border-[#E5E5E2]">
       <Container>
         {/* Section Heading */}
         <SectionHeading
@@ -24,128 +65,56 @@ export function ProcessSection() {
           badgeVariant="subtle"
           title="From Business Discovery to Scaled Launch."
           highlight="Step by Step."
-          description="We take clients through a predictable, milestone-driven framework. Every phase has clear deliverables, transparent timelines, and minimal client friction."
+          description="A predictable, milestone-driven framework engineered for speed and transparent delivery."
           action={
-            <Button href="#contact" variant="primary" arrow="horizontal">
-              Start Week 1 Discovery
+            <Button href="/about" variant="outline" arrow="diagonal">
+              Explore Complete Process
             </Button>
           }
-          className="mb-14"
+          className="mb-12"
         />
 
-        {/* Editorial Accordion Timeline */}
-        <div className="space-y-4 max-w-4xl mx-auto">
-          {PROCESS_STEPS.map((step) => {
-            const isExpanded = expandedStep === step.step;
+        {/* Horizontal Visual Timeline (Section 14) */}
+        <div className="relative">
+          {/* Connecting line on desktop */}
+          <div className="absolute top-1/2 left-8 right-8 h-0.5 bg-[#E5E5E2] -translate-y-1/2 hidden lg:block z-0" />
 
-            return (
-              <div
-                key={step.step}
-                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-                  isExpanded
-                    ? "bg-[#FFFFFF] border-[#111111] shadow-xs"
-                    : "bg-[#FFFFFF]/70 border-[#E5E5E2] hover:border-[#D8D8D4] hover:bg-[#FFFFFF]"
-                }`}
-              >
-                {/* Header Row */}
-                <button
-                  onClick={() => toggleStep(step.step)}
-                  className="w-full text-left p-6 sm:p-8 flex items-center justify-between gap-4 cursor-pointer select-none"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 relative z-10">
+            {TIMELINE_STEPS.map((step, idx) => {
+              const Icon = step.icon;
+
+              return (
+                <div
+                  key={step.number}
+                  className="p-5 rounded-2xl border border-[#E5E5E2] bg-[#FFFFFF] transition-all duration-200 hover:border-[#111111] hover:shadow-xs flex flex-col justify-between"
                 >
-                  <div className="flex items-center gap-4 sm:gap-6">
-                    <span
-                      className={`text-xl sm:text-2xl font-mono font-bold ${
-                        isExpanded ? "text-[#1400FF]" : "text-[#858585]"
-                      }`}
-                    >
-                      {step.step}
-                    </span>
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-mono uppercase tracking-widest text-[#858585] font-semibold">
-                          {step.phase}
-                        </span>
-                        <span className="text-xs text-[#858585] flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {step.duration}
-                        </span>
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-xs font-mono font-bold text-[#1400FF]">
+                        {step.number} // STAGE
+                      </span>
+                      <div className="w-8 h-8 rounded-lg bg-[#F7F7F5] border border-[#E5E5E2] flex items-center justify-center text-[#111111]">
+                        <Icon className="w-4 h-4" />
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold text-[#111111] tracking-tight">
-                        {step.title}
-                      </h3>
                     </div>
-                  </div>
 
-                  <div className="shrink-0 flex items-center gap-3">
-                    <span
-                      className={`hidden sm:inline-block text-xs font-mono px-3 py-1 rounded-full ${
-                        isExpanded
-                          ? "bg-[#111111] text-white"
-                          : "bg-[#F0F0ED] text-[#555555]"
-                      }`}
-                    >
-                      {isExpanded ? "Active View" : "Details"}
-                    </span>
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center border transition-transform ${
-                        isExpanded
-                          ? "border-[#111111] bg-[#111111] text-white rotate-180"
-                          : "border-[#E5E5E2] text-[#555555]"
-                      }`}
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </div>
-                  </div>
-                </button>
+                    <h3 className="text-base sm:text-lg font-bold text-[#111111] tracking-tight mb-2">
+                      {step.title}
+                    </h3>
 
-                {/* Expanded Content Drawer */}
-                {isExpanded && (
-                  <div className="px-6 sm:px-8 pb-8 pt-2 border-t border-[#E5E5E2] space-y-6 animate-in fade-in-50 duration-200">
-                    <p className="text-sm sm:text-base text-[#555555] leading-relaxed">
-                      {step.description}
+                    <p className="text-xs sm:text-sm text-[#555555] leading-relaxed">
+                      {step.explanation}
                     </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                      {/* Deliverables */}
-                      <div className="p-4 rounded-xl bg-[#F7F7F5] border border-[#E5E5E2]">
-                        <h4 className="text-xs font-mono uppercase tracking-widest text-[#111111] font-semibold mb-3">
-                          Phase Deliverables
-                        </h4>
-                        <ul className="space-y-2">
-                          {(step.keyDeliverables ?? step.deliverables ?? []).map((item, idx) => (
-                            <li
-                              key={idx}
-                              className="flex items-start gap-2 text-xs sm:text-sm text-[#555555]"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[#1400FF] shrink-0 mt-0.5" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Client Involvement */}
-                      <div className="p-4 rounded-xl bg-[#F7F7F5] border border-[#E5E5E2] flex flex-col justify-between">
-                        <div>
-                          <h4 className="text-xs font-mono uppercase tracking-widest text-[#111111] font-semibold mb-2 flex items-center gap-1.5">
-                            <UserCheck className="w-3.5 h-3.5 text-[#1400FF]" />
-                            <span>Client Involvement</span>
-                          </h4>
-                          <p className="text-xs sm:text-sm text-[#555555] leading-relaxed">
-                            {step.clientInvolvement ?? "Review key milestones and approve strategic deliverables."}
-                          </p>
-                        </div>
-                        <div className="pt-4 mt-4 border-t border-[#E5E5E2] text-[11px] font-mono text-[#858585]">
-                          Zero wasted meetings. Async reviews & clear milestones.
-                        </div>
-                      </div>
-                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+
+                  <div className="pt-4 mt-4 border-t border-[#E5E5E2] flex items-center justify-between text-[11px] font-mono text-[#858585]">
+                    <span>Step 0{idx + 1} of 05</span>
+                    <span className="text-[#1400FF] font-semibold">Milestone</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </Container>
     </section>

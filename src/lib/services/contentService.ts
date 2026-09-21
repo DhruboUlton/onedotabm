@@ -86,7 +86,7 @@ export async function getPortfolioItemById(id: string): Promise<PortfolioItemRec
        c.company_name AS client_name
      FROM public.portfolio_items p
      LEFT JOIN public.clients c ON c.id = p.client_id
-     WHERE p.id = $1::uuid OR p.slug = $1`,
+     WHERE p.id::text = $1 OR p.slug = $1`,
     [id]
   );
 
@@ -336,7 +336,7 @@ export async function getCaseStudyDbById(id: string): Promise<CaseStudyRecord | 
        created_at::text,
        updated_at::text
      FROM public.case_studies
-     WHERE id = $1::uuid OR slug = $1`,
+     WHERE id::text = $1 OR slug = $1`,
     [id]
   );
 
@@ -614,7 +614,7 @@ export async function getBlogPostDbById(id: string): Promise<BlogPostRecord | nu
        p.full_name AS author_name
      FROM public.blog_posts b
      LEFT JOIN public.profiles p ON p.id = b.author_id
-     WHERE b.id = $1::uuid OR b.slug = $1`,
+     WHERE b.id::text = $1 OR b.slug = $1`,
     [id]
   );
 

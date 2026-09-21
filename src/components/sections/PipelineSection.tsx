@@ -1,22 +1,96 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Button } from "@/components/ui/Button";
-import { PIPELINE_STEPS } from "@/data";
 import {
+  Target,
+  Sparkles,
   Zap,
-  CheckCircle2,
+  Globe,
+  ShoppingCart,
+  Database,
   RefreshCw,
+  ArrowRight,
 } from "lucide-react";
 
+interface PipelineNode {
+  number: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  discipline: "MARKETING" | "CROSS-DISCIPLINE" | "WEB ENGINEERING";
+  summary: string;
+  metric: string;
+}
+
+const LOOP_NODES: PipelineNode[] = [
+  {
+    number: "01",
+    label: "Strategy",
+    icon: Target,
+    discipline: "CROSS-DISCIPLINE",
+    summary: "Align ad economics with unit margins and conversion targets.",
+    metric: "CAC & LTV Targets",
+  },
+  {
+    number: "02",
+    label: "Attention",
+    icon: Sparkles,
+    discipline: "MARKETING",
+    summary: "Deploy direct response creative hooks across Meta and Google.",
+    metric: "CTR & Hook Rate",
+  },
+  {
+    number: "03",
+    label: "Traffic",
+    icon: Zap,
+    discipline: "MARKETING",
+    summary: "Funnel qualified, high-intent audiences directly to landing pages.",
+    metric: "Low CPC & CPCV",
+  },
+  {
+    number: "04",
+    label: "Website",
+    icon: Globe,
+    discipline: "WEB ENGINEERING",
+    summary: "Sub-second Next.js pages eliminate load drop-off.",
+    metric: "99/100 Lighthouse",
+  },
+  {
+    number: "05",
+    label: "Conversion",
+    icon: ShoppingCart,
+    discipline: "WEB ENGINEERING",
+    summary: "Frictionless checkout with instant payment gateways.",
+    metric: "High Order Rate",
+  },
+  {
+    number: "06",
+    label: "Data",
+    icon: Database,
+    discipline: "CROSS-DISCIPLINE",
+    summary: "Server-side CAPI transmits clean attribution data back to ad algorithms.",
+    metric: "100% Attribution",
+  },
+  {
+    number: "07",
+    label: "Optimization",
+    icon: RefreshCw,
+    discipline: "CROSS-DISCIPLINE",
+    summary: "Automated scaling of winning hooks and continuous CRO iteration.",
+    metric: "Compounding ROAS",
+  },
+];
+
 export function PipelineSection() {
-  const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const activeStep = PIPELINE_STEPS[activeStepIndex];
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const activeStep = LOOP_NODES[selectedIdx];
+  const ActiveIcon = activeStep.icon;
 
   return (
-    <section id="pipeline" className="py-20 md:py-28 bg-[#FFFFFF] border-b border-[#E5E5E2] overflow-hidden">
+    <section id="pipeline" className="py-16 md:py-24 bg-[#FFFFFF] border-b border-[#E5E5E2]">
       <Container>
         {/* Section Header */}
         <SectionHeading
@@ -25,74 +99,54 @@ export function PipelineSection() {
           badgeVariant="accent"
           title="The Closed-Loop Acquisition Machine."
           highlight="From First Ad to Scaled Revenue."
-          description="Most companies hire one agency for marketing and another for web development. The result is lost attribution, finger-pointing, and wasted budget. Here is how OneDot ABM connects both into an unbroken growth engine."
+          description="Connecting paid acquisition and custom web engineering into an unbroken commercial engine."
           action={
-            <Button href="#contact" variant="outline" arrow="diagonal">
-              Build Your Acquisition Loop
+            <Button href="/about" variant="outline" arrow="diagonal">
+              Learn Our Approach
             </Button>
           }
-          className="mb-14"
+          className="mb-12"
         />
 
-        {/* The 7-Step Interactive Pipeline Flow Bar */}
-        <div className="relative mb-12">
-          {/* Horizontal Progress Connector Line */}
-          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[#E5E5E2] -translate-y-1/2 hidden lg:block z-0" />
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 relative z-10">
-            {PIPELINE_STEPS.map((step, idx) => {
-              const isActive = activeStepIndex === idx;
-              const isPast = activeStepIndex > idx;
+        {/* 7-Step Visual Growth Loop Rail */}
+        <div className="relative mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            {LOOP_NODES.map((node, idx) => {
+              const isSelected = selectedIdx === idx;
+              const Icon = node.icon;
 
               return (
                 <button
-                  key={step.stepNumber}
-                  onClick={() => setActiveStepIndex(idx)}
-                  className={`group relative text-left p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
-                    isActive
-                      ? "bg-[#111111] text-white border-[#111111] shadow-lg scale-105 z-20"
-                      : isPast
-                      ? "bg-[#FFFFFF] text-[#111111] border-[#1400FF]/40 hover:border-[#1400FF]"
-                      : "bg-[#FFFFFF] text-[#555555] border-[#E5E5E2] hover:border-[#111111]"
+                  key={node.number}
+                  onClick={() => setSelectedIdx(idx)}
+                  className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                    isSelected
+                      ? "bg-[#111111] text-white border-[#111111] shadow-md -translate-y-1"
+                      : "bg-[#F7F7F5] text-[#111111] border-[#E5E5E2] hover:border-[#111111] hover:bg-[#FFFFFF]"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <span
-                      className={`text-[10px] font-mono font-bold ${
-                        isActive
-                          ? "text-[#1400FF]"
-                          : isPast
-                          ? "text-[#1400FF]"
-                          : "text-[#858585]"
+                      className={`text-xs font-mono font-bold ${
+                        isSelected ? "text-[#1400FF]" : "text-[#858585]"
                       }`}
                     >
-                      {step.stepNumber}
+                      {node.number}
                     </span>
+                    <Icon className={`w-4 h-4 ${isSelected ? "text-[#1400FF]" : "text-[#555555]"}`} />
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold tracking-tight">
+                      {node.label}
+                    </h4>
                     <span
-                      className={`h-2 w-2 rounded-full ${
-                        isActive
-                          ? "bg-[#1400FF] animate-pulse"
-                          : isPast
-                          ? "bg-[#1400FF]"
-                          : "bg-[#D8D8D4]"
+                      className={`text-[10px] font-mono mt-1 block truncate ${
+                        isSelected ? "text-neutral-400" : "text-[#858585]"
                       }`}
-                    />
-                  </div>
-
-                  <div
-                    className={`text-xs font-mono uppercase tracking-wider font-bold truncate ${
-                      isActive ? "text-white" : "text-[#111111]"
-                    }`}
-                  >
-                    {step.phase}
-                  </div>
-
-                  <div
-                    className={`text-[11px] mt-1 line-clamp-1 ${
-                      isActive ? "text-neutral-300" : "text-[#858585]"
-                    }`}
-                  >
-                    {step.title}
+                    >
+                      {node.discipline}
+                    </span>
                   </div>
                 </button>
               );
@@ -100,103 +154,40 @@ export function PipelineSection() {
           </div>
         </div>
 
-        {/* Detailed Inspection Showcase Card for Selected Step */}
-        <div className="rounded-3xl border border-[#D8D8D4] bg-[#F7F7F5] p-6 sm:p-10 shadow-xs relative overflow-hidden">
-          {/* Subtle Ambient Decorative Accent */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#1400FF]/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left Col: Step Header & Summary */}
-            <div className="lg:col-span-7 space-y-5">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-mono font-bold text-[#1400FF] bg-[#1400FF]/10 px-3 py-1 rounded-full">
-                  PHASE {activeStep.stepNumber} {"//"} {activeStep.phase}
+        {/* Focused Compact Node Preview Strip (No Long Essay) */}
+        <div className="rounded-2xl border border-[#D8D8D4] bg-[#F7F7F5] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-[#FFFFFF] border border-[#E5E5E2] flex items-center justify-center text-[#1400FF] shrink-0">
+              <ActiveIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-[#1400FF]">
+                  PHASE {activeStep.number} // {activeStep.label.toUpperCase()}
                 </span>
-                <span className="text-xs font-mono uppercase text-[#858585]">
-                  ROLE: {(activeStep.role ?? "marketing").toUpperCase()}
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#FFFFFF] border border-[#E5E5E2] text-[#858585]">
+                  {activeStep.discipline}
                 </span>
               </div>
-
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#111111] tracking-tight">
-                {activeStep.title}
-              </h3>
-
-              <p className="text-base text-[#555555] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#555555] mt-1">
                 {activeStep.summary}
               </p>
-
-              {/* Detail Bullets */}
-              <div className="pt-2">
-                <div className="text-xs font-mono uppercase tracking-widest text-[#858585] font-semibold mb-3">
-                  Key Operational Activities
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {(activeStep.details ?? []).map((detail, dIdx) => (
-                    <div
-                      key={dIdx}
-                      className="flex items-center gap-2 bg-[#FFFFFF] px-3.5 py-2.5 rounded-xl border border-[#E5E5E2] text-xs font-medium text-[#111111]"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#1400FF] shrink-0" />
-                      <span>{detail}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Col: Business Impact Box */}
-            <div className="lg:col-span-5 bg-[#FFFFFF] rounded-2xl border border-[#D8D8D4] p-6 sm:p-8 space-y-4">
-              <div className="flex items-center gap-2 pb-3 border-b border-[#E5E5E2]">
-                <Zap className="w-4 h-4 text-[#1400FF]" />
-                <span className="text-xs font-mono uppercase tracking-wider font-bold text-[#111111]">
-                  Measurable Commercial Impact
-                </span>
-              </div>
-
-              <div className="text-lg font-semibold text-[#111111] leading-snug">
-                &ldquo;{activeStep.impact}&rdquo;
-              </div>
-
-              <p className="text-xs text-[#555555] leading-relaxed">
-                When this step is executed in direct synchronization with the rest of the pipeline, your business stops leaking ad spend and begins building permanent compounding digital equity.
-              </p>
-
-              {/* Quick Pipeline Navigation */}
-              <div className="pt-4 border-t border-[#E5E5E2] flex items-center justify-between">
-                <button
-                  disabled={activeStepIndex === 0}
-                  onClick={() => setActiveStepIndex((prev) => Math.max(0, prev - 1))}
-                  className="text-xs font-mono text-[#555555] hover:text-[#111111] disabled:opacity-30 cursor-pointer"
-                >
-                  ← Previous
-                </button>
-                <span className="text-xs font-mono text-[#858585]">
-                  {activeStepIndex + 1} of {PIPELINE_STEPS.length}
-                </span>
-                <button
-                  disabled={activeStepIndex === PIPELINE_STEPS.length - 1}
-                  onClick={() =>
-                    setActiveStepIndex((prev) => Math.min(PIPELINE_STEPS.length - 1, prev + 1))
-                  }
-                  className="text-xs font-mono text-[#1400FF] font-semibold hover:underline disabled:opacity-30 cursor-pointer"
-                >
-                  Next Phase →
-                </button>
-              </div>
             </div>
           </div>
-        </div>
 
-        {/* Bottom Loop Conclusion Banner */}
-        <div className="mt-10 p-5 rounded-2xl bg-[#F0F0ED] border border-[#E5E5E2] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#555555]">
-          <div className="flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-[#1400FF] animate-spin" style={{ animationDuration: "12s" }} />
-            <span className="font-semibold text-[#111111]">The OneDot Feedback Advantage:</span>
-            <span>Web conversion data directly trains ad algorithms. Ads bring higher-converting traffic back to the web platform.</span>
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
+            <div className="px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#E5E5E2] text-xs font-mono">
+              <span className="text-[#858585] mr-1.5">Output:</span>
+              <span className="font-bold text-[#111111]">{activeStep.metric}</span>
+            </div>
+            <Link
+              href="/about"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[#111111] hover:text-[#1400FF] transition-colors"
+            >
+              <span>Full Methodology</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
           </div>
-          <Button href="#case-studies" variant="ghost" size="sm" arrow="horizontal">
-            See Real Results
-          </Button>
         </div>
       </Container>
     </section>
