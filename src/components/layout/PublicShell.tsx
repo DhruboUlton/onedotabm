@@ -16,7 +16,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navbar />
-      <main className="flex-1 flex flex-col pt-16 sm:pt-20">{children}</main>
+      <main className="flex-1 flex flex-col pt-24 sm:pt-28">{children}</main>
       <Footer />
     </>
   );

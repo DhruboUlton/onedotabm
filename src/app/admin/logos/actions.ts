@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   createLogoDb,
@@ -17,6 +19,9 @@ export interface ActionResponse<T = any> {
 export async function createLogoAction(
   data: Partial<LogoRecord>
 ): Promise<ActionResponse<LogoRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.company_name?.trim() || !data.logo_url?.trim()) {
       return { success: false, error: 'Company Name and Logo URL are required.' };
@@ -45,6 +50,9 @@ export async function updateLogoAction(
   id: string,
   data: Partial<LogoRecord>
 ): Promise<ActionResponse<LogoRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const updated = await updateLogoDb(id, data);
     revalidatePath('/admin/logos');
@@ -57,6 +65,9 @@ export async function updateLogoAction(
 }
 
 export async function deleteLogoAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteLogoDb(id);
     revalidatePath('/admin/logos');

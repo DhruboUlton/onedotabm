@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentAdmin } from '@/lib/auth/adminAuth';
+
 import { revalidatePath } from 'next/cache';
 import {
   getSiteBannerDb,
@@ -19,6 +21,9 @@ export async function saveSiteBannerAction(
   id: string,
   data: Partial<SiteBannerRecord>
 ): Promise<ActionResponse<SiteBannerRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.message?.trim()) {
       return { success: false, error: 'Announcement message cannot be empty.' };
@@ -37,6 +42,9 @@ export async function saveSiteBannerAction(
 export async function createSiteBannerAction(
   data: Partial<SiteBannerRecord>
 ): Promise<ActionResponse<SiteBannerRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     if (!data.message?.trim()) {
       return { success: false, error: 'Announcement message is required.' };
@@ -62,6 +70,9 @@ export async function createSiteBannerAction(
 }
 
 export async function deleteSiteBannerAction(id: string): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
   try {
     const deleted = await deleteSiteBannerDb(id);
     revalidatePath('/admin/site-banner');

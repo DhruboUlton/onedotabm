@@ -7,6 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { submitProjectInquiryAction } from "@/app/contact/actions";
 
 interface FormData {
   name: string;
@@ -39,6 +40,7 @@ export function ProjectInquiryForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
@@ -79,11 +81,17 @@ export function ProjectInquiryForm() {
     }
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
-    // Simulate API connection & webhook submission
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    const result = await submitProjectInquiryAction(formData);
 
     setIsSubmitting(false);
+
+    if (!result.success) {
+      setSubmitError(result.error || "Something went wrong. Please try again.");
+      return;
+    }
+
     setIsSubmitted(true);
   };
 
@@ -357,24 +365,33 @@ export function ProjectInquiryForm() {
       </div>
 
       {/* Submit Button & SLA note */}
-      <div className="pt-4 border-t border-[#E5E5E2] flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-xs text-[#555555] flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-[#1400FF]" />
-          <span>Guaranteed response within 24 hours.</span>
-        </div>
+      <div className="pt-4 border-t border-[#E5E5E2] space-y-4">
+        {submitError && (
+          <p className="text-sm text-rose-600 flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{submitError}</span>
+          </p>
+        )}
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          disabled={isSubmitting}
-          loading={isSubmitting}
-          withArrow
-          arrowType="diagonal"
-          className="w-full sm:w-auto"
-        >
-          Submit Qualification Inquiry
-        </Button>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-[#555555] flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#1400FF]" />
+            <span>Guaranteed response within 24 hours.</span>
+          </div>
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            disabled={isSubmitting}
+            loading={isSubmitting}
+            withArrow
+            arrowType="diagonal"
+            className="w-full sm:w-auto"
+          >
+            Submit Qualification Inquiry
+          </Button>
+        </div>
       </div>
     </form>
   );

@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, Lock, Mail, MapPin } from "lucide-react";
+import { ArrowUpRight, Lock, Mail } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -61,10 +61,6 @@ export function Footer() {
                 <Mail className="w-3.5 h-3.5 text-[#858585]" />
                 <span>hello@onedotabm.com</span>
               </a>
-              <div className="inline-flex items-center gap-2 text-[#858585] font-mono text-xs">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>Dhaka, Bangladesh // Available Worldwide</span>
-              </div>
             </div>
           </div>
 
@@ -102,6 +98,11 @@ export function Footer() {
               <li>
                 <Link href="/pricing" className="hover:text-[#111111] transition-colors">
                   Pricing
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog" className="hover:text-[#111111] transition-colors">
+                  Blog
                 </Link>
               </li>
               <li>

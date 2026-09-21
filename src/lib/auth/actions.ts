@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { dbQuery } from "@/lib/db";
 import {
   hashPassword,
+  verifyPassword,
   setAdminSession,
   clearAdminSession,
   getCurrentAdmin,
@@ -46,9 +47,18 @@ export async function loginAdminAction(
       return { error: "Invalid credentials or account inactive." };
     }
 
-    const inputHash = hashPassword(password);
-    if (inputHash !== user.password_hash) {
+    if (!verifyPassword(password, user.password_hash)) {
       return { error: "Invalid credentials. Please verify your password." };
+    }
+
+    // Self-healing migration: a legacy unsalted-SHA-256 hash upgrades to the
+    // new salted scrypt format the moment it's confirmed correct — no bulk
+    // migration to run, every account rehashes itself on next login.
+    if (/^[0-9a-f]{64}$/i.test(user.password_hash)) {
+      await dbQuery(`UPDATE public.profiles SET password_hash = $1 WHERE id = $2`, [
+        hashPassword(password),
+        user.id,
+      ]);
     }
 
     await setAdminSession(user);
