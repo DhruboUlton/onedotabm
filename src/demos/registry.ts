@@ -102,6 +102,20 @@ export const demos: DemoMeta[] = [
       image: '/demo-assets/ecommerce/demo-02-preview.jpg',
     },
   },
+  {
+    slug: 'demo-03',
+    category: 'ecommerce',
+    name: 'Kinetic Gear',
+    description:
+      'High-performance multi-vendor consumer electronics marketplace with interactive hardware variants, bento showcases, responsive catalog filters, cart drawer, guest checkout, order tracking, and synchronized merchant admin console.',
+    tags: ['Multi-Vendor', 'Electronics', 'Interactive Variants', 'Cart & Checkout', 'Admin Panel'],
+    hasAdmin: true,
+    preview: {
+      from: '#0B0F17',
+      to: '#2563EB',
+      image: '/demo-assets/ecommerce/demo-03-preview.jpg',
+    },
+  },
 ];
 
 export function getCategory(slug: string): DemoCategory | undefined {
