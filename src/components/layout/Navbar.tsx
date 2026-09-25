@@ -64,6 +64,11 @@ const navGroups: NavGroup[] = [
         href: "/case-studies",
         description: "Verified outcomes, full write-ups",
       },
+      {
+        label: "WebApp Demos",
+        href: "/webapp-demo",
+        description: "Interactive demos you can click through",
+      },
     ],
   },
   { label: "Pricing", href: "/pricing", index: "03" },
