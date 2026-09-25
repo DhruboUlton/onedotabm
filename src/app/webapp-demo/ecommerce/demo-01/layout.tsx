@@ -1,22 +1,25 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { CartProvider } from './_components/CartProvider';
-import { storeName, storeTagline } from './_data/catalog';
-
-/**
- * Demo root. Holds only what both the storefront and the admin panel need —
- * the cart state. Each of those two has its own layout for its own chrome.
- */
+import { StoreProvider } from './_context/StoreContext';
+import { ToastContainer } from './_components/ToastContainer';
+import { DemoFrame } from '@/demos/components/DemoFrame';
 
 export const metadata: Metadata = {
   title: {
-    default: `${storeName} — E-commerce Website Demo`,
-    template: `%s | ${storeName} Demo`,
+    default: 'Shuddha Harvest — 100% Pure Organic Farm Pantry',
+    template: '%s | Shuddha Harvest Demo',
   },
-  description: `Explore an interactive e-commerce website demo created by OneDot ABM. ${storeTagline}`,
+  description:
+    'Explore an interactive e-commerce website demo created by OneDot ABM. Pure cow gawa ghee, Sundarban wild honey, cold-pressed mustard oil and organic farm pantry.',
   robots: { index: false, follow: false },
 };
 
 export default function Demo01Layout({ children }: { children: React.ReactNode }) {
-  return <CartProvider>{children}</CartProvider>;
+  return (
+    <StoreProvider>
+      {children}
+      <ToastContainer />
+      <DemoFrame />
+    </StoreProvider>
+  );
 }

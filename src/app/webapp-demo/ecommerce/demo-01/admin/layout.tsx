@@ -1,19 +1,13 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { AdminShell } from './AdminShell';
-import { DemoFrame } from '@/demos/components/DemoFrame';
-import { storeName } from '../_data/catalog';
+import { AdminShell } from '../_components/AdminShell';
 
 export const metadata: Metadata = {
-  title: 'Admin Panel',
-  description: `Interactive admin panel demo for ${storeName}, built by OneDot ABM.`,
+  title: 'Merchant Admin Portal | Shuddha Harvest',
+  description: 'Manage store orders, products, inventory, marketing banners, and business settings.',
+  robots: { index: false, follow: false },
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <AdminShell>{children}</AdminShell>
-      <DemoFrame category="ecommerce" demo="demo-01" name={storeName} mode="admin" />
-    </>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

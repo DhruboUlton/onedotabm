@@ -6,10 +6,8 @@ import { DemoCategory, DemoMeta } from './types';
  * Metadata only — never import demo components or demo data here, or the
  * showcase landing page starts pulling every demo's bundle.
  *
- * To add a demo:
- *   1. create src/app/webapp-demo/<category>/<slug>/ with its pages
- *   2. add one entry to `demos` below
- * Nothing else in the system needs to change.
+ * To add a demo, see ./README.md — create the folder, drop <DemoFrame /> in its
+ * root layout, then add one entry to `demos` below. Nothing else changes.
  */
 
 export const categories: DemoCategory[] = [
@@ -79,12 +77,12 @@ export const demos: DemoMeta[] = [
   {
     slug: 'demo-01',
     category: 'ecommerce',
-    name: 'Kaya Supply',
+    name: 'Shuddha Harvest',
     description:
-      'A minimal home goods storefront with a filterable catalogue, product pages, a working cart and a stock-aware admin panel.',
-    tags: ['Catalogue', 'Search', 'Cart', 'Admin'],
+      'A complete responsive organic pantry storefront with pure gawa ghee, wild honey, cold-pressed oils, bundles, cart drawer, checkout and full merchant admin panel.',
+    tags: ['Storefront', 'Product Details', 'Cart & Checkout', 'Admin Panel'],
     hasAdmin: true,
-    preview: { from: '#1400FF', to: '#111111' },
+    preview: { from: '#062E25', to: '#E87121' },
   },
 ];
 
