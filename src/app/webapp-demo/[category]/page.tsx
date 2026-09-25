@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, LayoutDashboard } from 'lucide-react';
 import { Container } from '@/components/ui/Container';
@@ -84,7 +85,8 @@ export default async function DemoCategoryPage({ params }: PageProps) {
                     href={`/webapp-demo/${demo.category}/${demo.slug}`}
                     className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#E5E5E2] bg-white transition-all duration-300 hover:border-[#D8D8D4] hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.995] active:duration-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1400FF]"
                   >
-                    {/* Preview panel — a built visual, not a screenshot */}
+                    {/* Preview: the demo's screenshot in a laptop frame, or a
+                        built wireframe while a demo has no screenshot yet */}
                     <div
                       className="relative h-44 sm:h-52 overflow-hidden"
                       style={{
@@ -93,19 +95,34 @@ export default async function DemoCategoryPage({ params }: PageProps) {
                       aria-hidden="true"
                     >
                       <div className="absolute inset-0 opacity-25 [background-image:linear-gradient(to_right,rgba(255,255,255,0.35)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.35)_1px,transparent_1px)] [background-size:2rem_2rem]" />
-                      <div className="absolute inset-x-6 bottom-0 top-8 rounded-t-xl bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] p-4">
-                        <div className="flex items-center gap-1.5 mb-3">
-                          <span className="w-2 h-2 rounded-full bg-[#E5E5E2]" />
-                          <span className="w-2 h-2 rounded-full bg-[#E5E5E2]" />
-                          <span className="w-2 h-2 rounded-full bg-[#E5E5E2]" />
+
+                      {demo.preview.image ? (
+                        <div className="absolute inset-x-6 bottom-0 top-8 rounded-t-xl bg-[#1D1D1F] p-1.5 pb-0 shadow-[0_-8px_30px_rgba(0,0,0,0.3)]">
+                          <div className="relative h-full overflow-hidden rounded-t-lg bg-white">
+                            <Image
+                              src={demo.preview.image}
+                              alt=""
+                              fill
+                              sizes="(min-width: 768px) 45vw, 90vw"
+                              className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+                            />
+                          </div>
                         </div>
-                        <div className="h-2.5 w-1/3 rounded-full bg-[#111111]/80 mb-3" />
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="h-10 rounded-md bg-[#F0F0ED]" />
-                          <div className="h-10 rounded-md bg-[#F0F0ED]" />
-                          <div className="h-10 rounded-md bg-[#F0F0ED]" />
+                      ) : (
+                        <div className="absolute inset-x-6 bottom-0 top-8 rounded-t-xl bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] p-4">
+                          <div className="flex items-center gap-1.5 mb-3">
+                            <span className="w-2 h-2 rounded-full bg-[#E5E5E2]" />
+                            <span className="w-2 h-2 rounded-full bg-[#E5E5E2]" />
+                            <span className="w-2 h-2 rounded-full bg-[#E5E5E2]" />
+                          </div>
+                          <div className="h-2.5 w-1/3 rounded-full bg-[#111111]/80 mb-3" />
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="h-10 rounded-md bg-[#F0F0ED]" />
+                            <div className="h-10 rounded-md bg-[#F0F0ED]" />
+                            <div className="h-10 rounded-md bg-[#F0F0ED]" />
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     <div className="flex flex-1 flex-col justify-between gap-5 p-6">

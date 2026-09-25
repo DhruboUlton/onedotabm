@@ -106,6 +106,33 @@ That entry is what makes the demo appear on `/webapp-demo` and on its category
 page, and it is where `DemoFrame` gets the business name from. A demo that is not
 registered still runs, but its bar shows no name and no admin switch.
 
+### 5. Add the card screenshot (optional)
+
+Without a screenshot the card shows a generic wireframe. With one, it shows the
+demo's own home page inside a laptop frame.
+
+1. Open the demo at `/webapp-demo/<category>/<demo>` in a browser at a laptop
+   width — around 1440px wide.
+2. Capture the top of the page. On macOS, `Cmd+Shift+4` then drag, or
+   `Cmd+Shift+5` for a window capture.
+3. Save it to `public/demo-assets/<category>/<demo>-preview.jpg`. Keep it under
+   roughly 300KB; the card renders it about 600px wide, so a 1440px-wide JPEG at
+   quality 80 is more than enough.
+4. Point the registry entry at it:
+
+```ts
+preview: {
+  from: '#062E25',
+  to: '#E87121',
+  image: '/demo-assets/ecommerce/demo-01-preview.jpg',
+}
+```
+
+The path is absolute from `/public`, so it starts with `/demo-assets`, not
+`public/demo-assets`. The card crops the image from the top, so the header and
+hero are what show; anything below the fold is cropped away. The gradient stays
+as the surround, so `from` and `to` still matter.
+
 Nothing else in the system changes. No shared file needs a new branch, no route
 needs editing, and demo 2 is the same four steps with `demo-02`.
 

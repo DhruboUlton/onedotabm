@@ -82,7 +82,11 @@ export const demos: DemoMeta[] = [
       'A complete responsive organic pantry storefront with pure gawa ghee, wild honey, cold-pressed oils, bundles, cart drawer, checkout and full merchant admin panel.',
     tags: ['Storefront', 'Product Details', 'Cart & Checkout', 'Admin Panel'],
     hasAdmin: true,
-    preview: { from: '#062E25', to: '#E87121' },
+    preview: {
+      from: '#062E25',
+      to: '#E87121',
+      image: '/demo-assets/ecommerce/demo-01-preview.jpg',
+    },
   },
 ];
 

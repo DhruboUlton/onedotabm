@@ -46,8 +46,11 @@ export interface DemoMeta {
   /** Whether /admin exists for this demo. Drives the "View Admin Panel" CTA. */
   hasAdmin: boolean;
   /**
-   * Two CSS colors used to render the card preview. Avoids shipping stock
-   * imagery for every demo while keeping each card visually distinct.
+   * The card preview. `from`/`to` are the gradient behind the device, and are
+   * always required so a demo without a screenshot still gets a distinct card.
+   * `image` is a screenshot of the demo's home page, shown inside a laptop
+   * frame; it lives in /public and is referenced by absolute path, e.g.
+   * "/demo-assets/ecommerce/demo-01-preview.jpg".
    */
-  preview: { from: string; to: string };
+  preview: { from: string; to: string; image?: string };
 }
