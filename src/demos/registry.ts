@@ -88,6 +88,20 @@ export const demos: DemoMeta[] = [
       image: '/demo-assets/ecommerce/demo-01-preview.jpg',
     },
   },
+  {
+    slug: 'demo-02',
+    category: 'ecommerce',
+    name: 'AuraGlass Studio',
+    description:
+      'Luxe ultra-reflective 4mm tempered glass wall art atelier with F1 racing, anime, sports, motivational posters, size/bundle configurator, and full merchant admin panel.',
+    tags: ['Storefront', 'Product Details', 'Size & Design Config', 'Cart & Checkout', 'Admin Panel'],
+    hasAdmin: true,
+    preview: {
+      from: '#0A0B0E',
+      to: '#E86F1E',
+      image: '/demo-assets/ecommerce/demo-02-preview.jpg',
+    },
+  },
 ];
 
 export function getCategory(slug: string): DemoCategory | undefined {
