@@ -116,6 +116,20 @@ export const demos: DemoMeta[] = [
       image: '/demo-assets/ecommerce/demo-03-preview.jpg',
     },
   },
+  {
+    slug: 'demo-04',
+    category: 'ecommerce',
+    name: 'WonderSprout',
+    description:
+      "Playful children's educational toys, Montessori learning tools, and activity products with organic cloud/wave aesthetics, interactive variant picker, catalog filters, cart drawer, guest checkout, and synchronized merchant operating console.",
+    tags: ['Montessori Toys', 'Interactive Learning', 'Cart & Checkout', 'Admin Panel'],
+    hasAdmin: true,
+    preview: {
+      from: '#FFEFE4',
+      to: '#EB1551',
+      image: '/demo-assets/ecommerce/demo-04-preview.jpg',
+    },
+  },
 ];
 
 export function getCategory(slug: string): DemoCategory | undefined {
