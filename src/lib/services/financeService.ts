@@ -1,4 +1,4 @@
-import { dbQuery, dbTransaction } from '@/lib/db';
+import { dbQuery, isUuid, dbTransaction } from '@/lib/db';
 import {
   QuotationRecord,
   QuotationItemRecord,
@@ -106,6 +106,8 @@ export async function getQuotations(filters?: {
 }
 
 export async function getQuotationById(id: string): Promise<QuotationRecord | null> {
+  if (!isUuid(id)) return null;
+
   const quoteRes = await dbQuery<QuotationRecord>(
     `
     SELECT 
@@ -389,6 +391,8 @@ export async function getInvoices(filters?: {
 }
 
 export async function getInvoiceById(id: string): Promise<InvoiceRecord | null> {
+  if (!isUuid(id)) return null;
+
   const invRes = await dbQuery<InvoiceRecord>(
     `
     SELECT 

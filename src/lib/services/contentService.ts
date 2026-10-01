@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { dbQuery } from '@/lib/db';
+import { dbQuery, isUuid } from '@/lib/db';
 import {
   PortfolioItemRecord,
   CaseStudyRecord,
@@ -68,6 +68,8 @@ export async function getPortfolioItems(filter?: {
 // same id on every detail-page load; without dedup that's 2 round trips
 // (each costly on a cross-region DB) for one page render.
 export const getPortfolioItemById = cache(async (id: string): Promise<PortfolioItemRecord | null> => {
+  if (!isUuid(id)) return null;
+
   const res = await dbQuery<PortfolioItemRecord>(
     `SELECT
        p.id,
@@ -318,6 +320,8 @@ export async function getCaseStudiesDb(filter?: {
 
 // cache(): see getPortfolioItemById above — same double-fetch shape.
 export const getCaseStudyDbById = cache(async (id: string): Promise<CaseStudyRecord | null> => {
+  if (!isUuid(id)) return null;
+
   const res = await dbQuery<CaseStudyRecord>(
     `SELECT
        id,
@@ -599,6 +603,8 @@ export async function getBlogPostsDb(filter?: {
 
 // cache(): see getPortfolioItemById above — same double-fetch shape.
 export const getBlogPostDbById = cache(async (id: string): Promise<BlogPostRecord | null> => {
+  if (!isUuid(id)) return null;
+
   const res = await dbQuery<BlogPostRecord & { author_name?: string }>(
     `SELECT
        b.id,

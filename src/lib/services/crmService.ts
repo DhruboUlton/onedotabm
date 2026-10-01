@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { dbQuery } from '@/lib/db';
+import { dbQuery, isUuid } from '@/lib/db';
 import { logActivity } from '@/lib/services/activityService';
 import type { ClientBusinessInput } from '@/lib/forms/clientBusinesses';
 import {
@@ -92,6 +92,8 @@ export async function getLeads(options: GetLeadsOptions = {}): Promise<LeadRecor
 // same id on every detail-page load; without dedup that's 2 round trips
 // (each ~300ms+ on a cross-region DB) for what is really one query.
 export const getLeadById = cache(async (id: string): Promise<LeadRecord | null> => {
+  if (!isUuid(id)) return null;
+
   const query = `
     SELECT
       l.*,
@@ -415,6 +417,8 @@ export async function getProspects(options: GetProspectsOptions = {}): Promise<P
 
 // cache(): see getLeadById above — same double-fetch shape.
 export const getProspectById = cache(async (id: string): Promise<ProspectRecord | null> => {
+  if (!isUuid(id)) return null;
+
   const query = `
     SELECT
       pr.*,
@@ -640,6 +644,8 @@ export async function getClients(options: GetClientsOptions = {}): Promise<Clien
 
 // cache(): see getLeadById above — same double-fetch shape.
 export const getClientById = cache(async (id: string): Promise<ClientDetailRecord | null> => {
+  if (!isUuid(id)) return null;
+
   // 1. Fetch client info
   const clientQuery = `
     SELECT 

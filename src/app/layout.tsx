@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Open_Sans } from "next/font/google";
 import "./globals.css";
 import { PublicShell } from "@/components/layout";
 
@@ -10,6 +10,12 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Documents (invoices, quotations) are set in Open Sans, not the site face.
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
   subsets: ["latin"],
 });
 
@@ -40,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
+      className={`${geistSans.variable} ${geistMono.variable} ${openSans.variable} h-full antialiased light`}
     >
       <body className="min-h-full flex flex-col bg-[#F7F7F5] text-[#111111] selection:bg-[#1400FF] selection:text-white">
         <PublicShell>{children}</PublicShell>

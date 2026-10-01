@@ -37,7 +37,10 @@ export function AdminShell({ currentAdmin, children }: AdminShellProps) {
   return (
     <div className="min-h-screen bg-[#F7F7F5] flex flex-col text-[#111111]">
       {/* Desktop Sidebar (Fixed Left) */}
-      <aside className="hidden lg:flex w-64 xl:w-72 flex-col fixed inset-y-0 left-0 border-r border-[#E5E5E2] bg-white z-30">
+      <aside
+        data-print-hide
+        className="hidden lg:flex w-64 xl:w-72 flex-col fixed inset-y-0 left-0 border-r border-[#E5E5E2] bg-white z-30"
+      >
         <AdminSidebar currentAdmin={currentAdmin} />
       </aside>
 
@@ -73,13 +76,15 @@ export function AdminShell({ currentAdmin, children }: AdminShellProps) {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:pl-64 xl:pl-72 min-w-0">
-        <AdminHeader
-          currentAdmin={currentAdmin}
-          onMenuToggle={() => setMobileMenuOpen(true)}
-        />
+      <div className="flex-1 flex flex-col lg:pl-64 xl:pl-72 min-w-0 print:pl-0">
+        <div data-print-hide>
+          <AdminHeader
+            currentAdmin={currentAdmin}
+            onMenuToggle={() => setMobileMenuOpen(true)}
+          />
+        </div>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto print:p-0 print:max-w-none">
           {children}
         </main>
       </div>

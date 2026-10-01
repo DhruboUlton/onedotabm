@@ -33,6 +33,12 @@
 
   --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-document: var(--font-open-sans), "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+}
+
+/* Printable documents set themselves in Open Sans. */
+[data-print-document] {
+  font-family: var(--font-document);
 }
 
 /* Document & Base Styles */
@@ -248,5 +254,48 @@ body {
 
   html {
     scroll-behavior: auto !important;
+  }
+}
+
+
+/* ── Printing a document (invoice, quotation) ──────────────────────────────
+   The admin shell is screen furniture. On paper only the document remains, at
+   A4 with its own margins, and backgrounds are kept so the header band and
+   totals block do not print as empty outlines. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  [data-print-document] {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  /* A row split across two sheets is unreadable. */
+  tr,
+  thead,
+  [data-print-keep] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

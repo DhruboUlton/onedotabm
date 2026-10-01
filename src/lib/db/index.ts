@@ -25,6 +25,17 @@ export function getDbPool(): Pool {
   return pool;
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Ids come from the URL, so they can be anything. Postgres rejects a malformed
+ * uuid with a 22P02 error, which surfaces as a 500 — a route should answer 404
+ * instead. Lookups check the shape before they reach the database.
+ */
+export function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
 export async function dbQuery<T extends QueryResultRow = any>(
   text: string,
   params?: any[]

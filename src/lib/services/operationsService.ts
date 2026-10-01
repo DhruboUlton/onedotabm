@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { dbQuery } from '@/lib/db';
+import { dbQuery, isUuid } from '@/lib/db';
 import {
   ProjectRecord,
   ProjectTaskRecord,
@@ -111,6 +111,8 @@ export async function getProjects(filter?: {
 // same id on every detail-page load; without dedup that's 2x the queries
 // below (each round trip costly on a cross-region DB) for one page render.
 export const getProjectById = cache(async (id: string): Promise<ProjectRecord | null> => {
+  if (!isUuid(id)) return null;
+
   const res = await dbQuery<ProjectRecord>(
     `SELECT 
        p.id,
@@ -737,6 +739,8 @@ export async function getWebsites(filter?: {
 
 // cache(): see getProjectById above — same double-fetch shape.
 export const getWebsiteById = cache(async (id: string): Promise<WebsiteRecord | null> => {
+  if (!isUuid(id)) return null;
+
   const res = await dbQuery<WebsiteRecord>(
     `SELECT
        w.id,
