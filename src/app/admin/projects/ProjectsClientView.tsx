@@ -46,6 +46,7 @@ export function ProjectsClientView({
   const [formData, setFormData] = useState({
     project_name: '',
     client_id: clients[0]?.id || '',
+    business_id: '',
     service_type: 'Custom Web Application',
     budget: '',
     currency: 'BDT',
@@ -57,12 +58,17 @@ export function ProjectsClientView({
     notes: '',
   });
 
+  // Businesses belong to the chosen client, so the list follows the client select.
+  const selectedClientBusinesses =
+    clients.find((c) => c.id === formData.client_id)?.businesses ?? [];
+
   // Filtered projects
   const filteredProjects = projects.filter((p) => {
     const matchesSearch =
       !searchQuery ||
       p.project_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.client_name && p.client_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (p.business_name && p.business_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       p.service_type.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
@@ -89,6 +95,7 @@ export function ProjectsClientView({
     const res = await createProjectAction({
       project_name: formData.project_name,
       client_id: formData.client_id,
+      business_id: formData.business_id || null,
       service_type: formData.service_type,
       budget: formData.budget ? Number(formData.budget) : 0,
       currency: formData.currency,
@@ -107,7 +114,9 @@ export function ProjectsClientView({
       const selectedClient = clients.find((c) => c.id === formData.client_id);
       const newProj = {
         ...res.data,
-        client_name: selectedClient?.company_name || 'Client',
+        client_name: selectedClient ? clientLabel(selectedClient) : 'Client',
+        business_name:
+          selectedClient?.businesses.find((b) => b.id === formData.business_id)?.name || null,
         tasks_count: 0,
         completed_tasks_count: 0,
       };
@@ -116,6 +125,7 @@ export function ProjectsClientView({
       setFormData({
         project_name: '',
         client_id: clients[0]?.id || '',
+        business_id: '',
         service_type: 'Custom Web Application',
         budget: '',
         currency: 'BDT',
@@ -323,6 +333,11 @@ export function ProjectsClientView({
                           <Building2 className="w-3.5 h-3.5 text-[#858585]" />
                           <span>{project.client_name || 'Client'}</span>
                         </div>
+                        {project.business_name && (
+                          <div className="mt-0.5 pl-5 text-[11px] text-[#858585]">
+                            {project.business_name}
+                          </div>
+                        )}
                       </td>
 
                       <td className="px-6 py-4 min-w-[140px]">
@@ -453,12 +468,37 @@ export function ProjectsClientView({
                   <select
                     required
                     value={formData.client_id}
-                    onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, client_id: e.target.value, business_id: '' })
+                    }
                     className="w-full px-3.5 py-2 text-sm bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF] focus:bg-white"
                   >
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {clientLabel(c)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#111111] mb-1">
+                    Business
+                  </label>
+                  <select
+                    value={formData.business_id}
+                    onChange={(e) => setFormData({ ...formData, business_id: e.target.value })}
+                    disabled={selectedClientBusinesses.length === 0}
+                    className="w-full px-3.5 py-2 text-sm bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF] focus:bg-white disabled:text-[#858585] disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {selectedClientBusinesses.length === 0
+                        ? 'No business on this client'
+                        : 'Not business specific'}
+                    </option>
+                    {selectedClientBusinesses.map((business) => (
+                      <option key={business.id} value={business.id}>
+                        {business.name}
                       </option>
                     ))}
                   </select>

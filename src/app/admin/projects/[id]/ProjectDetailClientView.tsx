@@ -124,7 +124,7 @@ export function ProjectDetailClientView({
       setProject({
         ...project,
         ...res.data,
-        client_name: selectedClient?.company_name || project.client_name,
+        client_name: selectedClient ? clientLabel(selectedClient) : project.client_name,
       });
       setIsEditingProject(false);
       router.refresh();
@@ -279,6 +279,12 @@ export function ProjectDetailClientView({
                 <Building2 className="w-3.5 h-3.5" />
                 {project.client_name || 'Client'}
               </span>
+              {project.business_name && (
+                <>
+                  <span>•</span>
+                  <span>{project.business_name}</span>
+                </>
+              )}
               <span>•</span>
               <span>{project.service_type}</span>
             </div>

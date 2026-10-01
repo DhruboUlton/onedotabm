@@ -45,6 +45,7 @@ export async function createProjectAction(
     const created = await createProject({
       project_name: data.project_name,
       client_id: data.client_id,
+      business_id: data.business_id || null,
       service_type: data.service_type,
       description: data.description,
       start_date: data.start_date,

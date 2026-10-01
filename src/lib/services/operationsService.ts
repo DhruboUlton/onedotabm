@@ -21,6 +21,8 @@ export interface ClientOption {
   /** Null when the client runs no business; fall back to contact_person. */
   company_name: string | null;
   contact_person: string;
+  /** Every business this client runs, primary first. */
+  businesses: { id: string; name: string }[];
 }
 
 export interface ProfileOption {
@@ -38,8 +40,16 @@ export interface ProjectOption {
 
 export async function getClientsOptions(): Promise<ClientOption[]> {
   const res = await dbQuery<ClientOption>(
-    `SELECT id, company_name, contact_person FROM public.clients
-     ORDER BY contact_person ASC`
+    `SELECT
+       c.id,
+       c.company_name,
+       c.contact_person,
+       COALESCE((
+         SELECT json_agg(json_build_object('id', b.id, 'name', b.name) ORDER BY b.position, b.created_at)
+         FROM public.client_businesses b WHERE b.client_id = c.id
+       ), '[]'::json) AS businesses
+     FROM public.clients c
+     ORDER BY c.contact_person ASC`
   );
   return res.rows;
 }
@@ -76,6 +86,7 @@ export async function getProjects(filter?: {
        p.id,
        p.project_name,
        p.client_id,
+       p.business_id,
        p.service_type,
        p.description,
        p.start_date::text,
@@ -91,11 +102,13 @@ export async function getProjects(filter?: {
        p.created_at::text,
        p.updated_at::text,
        COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
+       b.name AS business_name,
        pr.full_name AS project_manager_name,
        COALESCE((SELECT COUNT(*) FROM public.project_tasks pt WHERE pt.project_id = p.id), 0)::int AS tasks_count,
        COALESCE((SELECT COUNT(*) FROM public.project_tasks pt WHERE pt.project_id = p.id AND pt.status = 'completed'), 0)::int AS completed_tasks_count
      FROM public.projects p
      LEFT JOIN public.clients c ON c.id = p.client_id
+     LEFT JOIN public.client_businesses b ON b.id = p.business_id
      LEFT JOIN public.profiles pr ON pr.id = p.project_manager
      WHERE ($1::text IS NULL OR p.status::text = $1)
        AND ($2::uuid IS NULL OR p.client_id = $2::uuid)
@@ -118,6 +131,7 @@ export const getProjectById = cache(async (id: string): Promise<ProjectRecord | 
        p.id,
        p.project_name,
        p.client_id,
+       p.business_id,
        p.service_type,
        p.description,
        p.start_date::text,
@@ -133,11 +147,13 @@ export const getProjectById = cache(async (id: string): Promise<ProjectRecord | 
        p.created_at::text,
        p.updated_at::text,
        COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
+       b.name AS business_name,
        pr.full_name AS project_manager_name,
        COALESCE((SELECT COUNT(*) FROM public.project_tasks pt WHERE pt.project_id = p.id), 0)::int AS tasks_count,
        COALESCE((SELECT COUNT(*) FROM public.project_tasks pt WHERE pt.project_id = p.id AND pt.status = 'completed'), 0)::int AS completed_tasks_count
      FROM public.projects p
      LEFT JOIN public.clients c ON c.id = p.client_id
+     LEFT JOIN public.client_businesses b ON b.id = p.business_id
      LEFT JOIN public.profiles pr ON pr.id = p.project_manager
      WHERE p.id = $1::uuid`,
     [id]
@@ -196,6 +212,7 @@ export async function createProject(
   data: {
     project_name: string;
     client_id: string;
+    business_id?: string | null;
     service_type: string;
     description?: string | null;
     start_date?: string | null;
@@ -215,6 +232,7 @@ export async function createProject(
     `INSERT INTO public.projects (
        project_name,
        client_id,
+       business_id,
        service_type,
        description,
        start_date,
@@ -230,22 +248,24 @@ export async function createProject(
      ) VALUES (
        $1,
        $2::uuid,
-       $3,
+       $3::uuid,
        $4,
-       COALESCE($5::date, CURRENT_DATE),
-       $6::date,
-       COALESCE($7, 0.00),
-       COALESCE($8, 'BDT'),
-       COALESCE($9::uuid[], '{}'),
-       $10::uuid,
-       COALESCE($11::project_status_enum, 'planning'),
-       COALESCE($12::priority_enum, 'medium'),
-       COALESCE($13, 0),
-       $14
+       $5,
+       COALESCE($6::date, CURRENT_DATE),
+       $7::date,
+       COALESCE($8, 0.00),
+       COALESCE($9, 'BDT'),
+       COALESCE($10::uuid[], '{}'),
+       $11::uuid,
+       COALESCE($12::project_status_enum, 'planning'),
+       COALESCE($13::priority_enum, 'medium'),
+       COALESCE($14, 0),
+       $15
      ) RETURNING *`,
     [
       data.project_name,
       data.client_id,
+      data.business_id || null,
       data.service_type,
       data.description || null,
       data.start_date || null,
@@ -294,6 +314,7 @@ export async function updateProject(
     `UPDATE public.projects SET
        project_name = COALESCE($1, project_name),
        client_id = COALESCE($2::uuid, client_id),
+       business_id = CASE WHEN $16::text IS NOT NULL THEN NULLIF($16, '')::uuid ELSE business_id END,
        service_type = COALESCE($3, service_type),
        description = CASE WHEN $4 IS NOT NULL THEN $4 ELSE description END,
        start_date = CASE WHEN $5 IS NOT NULL THEN $5::date ELSE start_date END,
@@ -325,6 +346,8 @@ export async function updateProject(
       data.progress !== undefined ? Number(data.progress) : null,
       data.notes !== undefined ? data.notes : null,
       id,
+      // '' clears the business, undefined leaves it alone.
+      data.business_id !== undefined ? data.business_id ?? '' : null,
     ]
   );
 

@@ -122,6 +122,8 @@ export interface ProjectRecord {
   id: string;
   project_name: string;
   client_id: string;
+  /** Which of the client's businesses this project is for, if any. */
+  business_id?: string | null;
   service_type: string;
   description?: string | null;
   start_date: string;
@@ -138,6 +140,7 @@ export interface ProjectRecord {
   updated_at: string;
   // Joined fields
   client_name?: string;
+  business_name?: string | null;
   project_manager_name?: string | null;
   tasks_count?: number;
   completed_tasks_count?: number;
