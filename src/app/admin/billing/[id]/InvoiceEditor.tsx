@@ -220,7 +220,7 @@ export function InvoiceEditor({
                 </a>
                 <span className="text-[#E5E5E2]">·</span>
                 <a
-                  href={`/billing/${invoice.invoice_number}?print=1`}
+                  href={`/billing/${invoice.invoice_number}/pdf`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-xs text-[#555555] hover:text-[#1400FF] flex items-center gap-1"

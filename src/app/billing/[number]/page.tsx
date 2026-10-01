@@ -8,13 +8,11 @@ import { getCompanySettings } from '@/lib/services/systemService';
 import { getCurrentAdmin } from '@/lib/auth/adminAuth';
 import { getLifecycleState } from '@/lib/invoiceMeta';
 import { InvoiceDocument } from '@/components/billing/InvoiceDocument';
-import { PrintOnLoad } from '@/components/billing/PrintOnLoad';
 
 export const dynamic = 'force-dynamic';
 
 type Props = {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ print?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -22,9 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `Invoice ${decodeURIComponent(number).toUpperCase()}`, robots: { index: false, follow: false } };
 }
 
-export default async function PublicInvoicePage({ params, searchParams }: Props) {
+export default async function PublicInvoicePage({ params }: Props) {
   const { number } = await params;
-  const { print } = await searchParams;
   const [invoice, company, admin] = await Promise.all([
     getInvoiceByNumber(decodeURIComponent(number)),
     getCompanySettings(),
@@ -35,11 +32,9 @@ export default async function PublicInvoicePage({ params, searchParams }: Props)
   // The admin always sees the whole thing; clients get the lifecycle rules.
   const state = admin ? 'active' : getLifecycleState(invoice);
   if (state === 'draft') notFound();
-  const wantsPrint = print === '1' && state !== 'expired';
 
   return (
     <section className="py-10 sm:py-14 bg-[#F7F7F5] flex-1">
-      {wantsPrint && <PrintOnLoad />}
       <Container>
         <div className="max-w-4xl mx-auto">
           <div data-print-hide className="flex items-center justify-between gap-3 mb-6">
@@ -48,7 +43,7 @@ export default async function PublicInvoicePage({ params, searchParams }: Props)
             </Link>
             {state !== 'expired' && (
               <a
-                href={`/billing/${invoice.invoice_number}?print=1`}
+                href={`/billing/${invoice.invoice_number}/pdf`}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#1400FF] border border-[#C7D2FE] bg-white rounded-xl hover:bg-[#EEF2FF]"
               >
                 <Download className="w-4 h-4" /> PDF
@@ -67,7 +62,7 @@ export default async function PublicInvoicePage({ params, searchParams }: Props)
             </div>
           ) : (
             <>
-              {state === 'pdf_only' && !wantsPrint && (
+              {state === 'pdf_only' && (
                 <div data-print-hide className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5">
                   <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-800">
@@ -75,7 +70,7 @@ export default async function PublicInvoicePage({ params, searchParams }: Props)
                   </p>
                 </div>
               )}
-              <InvoiceDocument invoice={invoice} company={company} showFull={state === 'active' || wantsPrint} />
+              <InvoiceDocument invoice={invoice} company={company} showFull={state === 'active'} />
             </>
           )}
         </div>
