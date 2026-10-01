@@ -6,9 +6,6 @@ import {
   updateQuotationStatus,
   deleteQuotation,
   createInvoice,
-  updateInvoiceStatus,
-  deleteInvoice,
-  recordPayment,
 } from '@/lib/services/financeService';
 import {
   toggleIntegration,
@@ -145,58 +142,6 @@ export async function createInvoiceAction(payload: {
     return { success: false, error: error.message || 'Failed to create invoice' };
   }
 }
-
-export async function updateInvoiceStatusAction(id: string, status: InvoiceStatus) {
-  try {
-    const invoice = await updateInvoiceStatus(id, status);
-    revalidatePath('/admin/billing');
-    revalidatePath(`/admin/billing/${id}`);
-    revalidatePath('/admin/dashboard');
-    revalidatePath('/admin/analytics');
-    return { success: true, data: invoice };
-  } catch (error: any) {
-    console.error('updateInvoiceStatusAction error:', error);
-    return { success: false, error: error.message || 'Failed to update invoice status' };
-  }
-}
-
-export async function deleteInvoiceAction(id: string) {
-  try {
-    await deleteInvoice(id);
-    revalidatePath('/admin/billing');
-    revalidatePath('/admin/dashboard');
-    return { success: true };
-  } catch (error: any) {
-    console.error('deleteInvoiceAction error:', error);
-    return { success: false, error: error.message || 'Failed to delete invoice' };
-  }
-}
-
-export async function recordPaymentAction(payload: {
-  invoice_id: string;
-  amount: number;
-  currency?: string;
-  payment_method: string;
-  payment_date?: string;
-  reference?: string | null;
-  notes?: string | null;
-}) {
-  try {
-    const payment = await recordPayment(payload);
-    revalidatePath('/admin/billing');
-    revalidatePath(`/admin/billing/${payload.invoice_id}`);
-    revalidatePath('/admin/dashboard');
-    revalidatePath('/admin/analytics');
-    return { success: true, data: payment };
-  } catch (error: any) {
-    console.error('recordPaymentAction error:', error);
-    return { success: false, error: error.message || 'Failed to record payment' };
-  }
-}
-
-// ============================================================================
-// SYSTEM SERVER ACTIONS
-// ============================================================================
 
 export async function toggleIntegrationAction(
   provider: string,

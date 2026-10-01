@@ -277,6 +277,16 @@ body {
     display: none !important;
   }
 
+  /* Public document pages sit inside the site chrome; paper gets the document only. */
+  body:has([data-print-document]) header,
+  body:has([data-print-document]) footer {
+    display: none !important;
+  }
+
+  body:has([data-print-document]) main {
+    padding-top: 0 !important;
+  }
+
   [data-print-document] {
     border: 0 !important;
     border-radius: 0 !important;

@@ -1,23 +1,28 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { getInvoiceById } from '@/lib/services/financeService';
+import { getInvoiceDetail, getBillingClients } from '@/lib/services/invoiceService';
 import { getCompanySettings } from '@/lib/services/systemService';
-import { InvoiceDetailClient } from '@/components/admin/InvoiceDetailClient';
+import { InvoiceEditor } from './InvoiceEditor';
 
 export const dynamic = 'force-dynamic';
 
-export default async function InvoiceDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function InvoiceEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // The letterhead is whatever is in settings, not a copy hardcoded in the view.
-  const [invoice, company] = await Promise.all([getInvoiceById(id), getCompanySettings()]);
+  const isNew = id === 'new';
+  const [invoice, clients, company] = await Promise.all([
+    isNew ? null : getInvoiceDetail(id),
+    getBillingClients(),
+    getCompanySettings(),
+  ]);
+  if (!isNew && !invoice) notFound();
 
-  if (!invoice) {
-    notFound();
-  }
-
-  return <InvoiceDetailClient invoice={invoice} company={company} />;
+  return (
+    <InvoiceEditor
+      key={id}
+      invoice={invoice}
+      clients={clients}
+      defaultCurrency={company.default_currency || 'BDT'}
+      defaultTaxRate={Number(company.tax_rate) || 0}
+    />
+  );
 }

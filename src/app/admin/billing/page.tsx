@@ -1,25 +1,17 @@
 import React from 'react';
-import {
-  getInvoices,
-  getClientsForFinance,
-  getProjectsForFinance,
-} from '@/lib/services/financeService';
-import { BillingClient } from '@/components/admin/BillingClient';
+import { getInvoiceList } from '@/lib/services/invoiceService';
+import { BillingListView } from './BillingListView';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminBillingPage() {
-  const [invoices, clients, projects] = await Promise.all([
-    getInvoices(),
-    getClientsForFinance(),
-    getProjectsForFinance(),
-  ]);
+export const metadata = { title: 'Billing | OneDot ABM' };
 
-  return (
-    <BillingClient
-      initialInvoices={invoices}
-      clients={clients}
-      projects={projects}
-    />
-  );
+export default async function AdminBillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; q?: string }>;
+}) {
+  const { status = 'all', q = '' } = await searchParams;
+  const invoices = await getInvoiceList({ status, search: q });
+  return <BillingListView invoices={invoices} status={status} query={q} />;
 }
