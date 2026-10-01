@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,13 +18,18 @@ import {
   TrendingUp,
   Building2,
   Zap,
+  Upload,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import { CaseStudyRecord, ContentStatus } from '@/types/database';
+import { csvToCaseStudyRows, CASE_STUDY_CSV_TEMPLATE, CaseStudyCsvRow } from '@/lib/caseStudyCsv';
 import { ClientOption } from '@/lib/services/operationsService';
 import {
   createCaseStudyAction,
   deleteCaseStudyAction,
   updateCaseStudyAction,
+  importCaseStudiesAction,
 } from './actions';
 
 interface CaseStudiesClientViewProps {
@@ -157,8 +162,117 @@ export function CaseStudiesClientView({
     }
   };
 
+  // CSV import
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [pendingRows, setPendingRows] = useState<CaseStudyCsvRow[] | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPendingRows(csvToCaseStudyRows(String(reader.result || '')));
+      setImportError(null);
+    };
+    reader.onerror = () => setImportError('Could not read that file.');
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const confirmImport = async () => {
+    if (!pendingRows?.length) return;
+    setImporting(true);
+    const res = await importCaseStudiesAction(pendingRows);
+    setImporting(false);
+    if (!res.success || !res.data) {
+      setImportError(res.error || 'Import failed.');
+      return;
+    }
+    setPendingRows(null);
+    alert(
+      [
+        `${res.data.created} imported`,
+        res.data.skipped ? `${res.data.skipped} already existed` : '',
+        res.data.invalid ? `${res.data.invalid} skipped (missing client or headline)` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    );
+    router.refresh();
+  };
+
+  const downloadTemplate = () => {
+    const url = URL.createObjectURL(new Blob([CASE_STUDY_CSV_TEMPLATE], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'case-studies-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-8">
+      {pendingRows && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4 bg-black/40">
+          <div className="w-full max-w-3xl bg-white rounded-2xl border border-[#E5E5E2] shadow-2xl p-6">
+            <h2 className="text-lg font-bold text-[#111111] mb-3">
+              Import {pendingRows.length} case stud{pendingRows.length === 1 ? 'y' : 'ies'}
+            </h2>
+            {pendingRows.length === 0 ? (
+              <p className="text-sm text-rose-700 mb-4">
+                No usable rows found. Every row needs at least a client and a result headline — download the template to see the columns.
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-[#858585] mb-3">
+                  {pendingRows.filter((r) => r.featured).length} marked as featured · rows already in the CMS (same client and headline) are skipped.
+                </p>
+                <div className="border border-[#E5E5E2] rounded-xl overflow-hidden mb-4 max-h-80 overflow-y-auto">
+                  <table className="w-full text-left">
+                    <thead className="sticky top-0 bg-[#F7F7F5]">
+                      <tr className="text-[10px] font-mono uppercase text-[#858585] tracking-wider">
+                        {['Client', 'Services', 'Headline', 'Metrics'].map((h) => (
+                          <th key={h} className="px-3 py-2">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingRows.map((r, i) => (
+                        <tr key={i} className="border-t border-[#F0F0ED]">
+                          <td className="px-3 py-2 text-xs font-semibold text-[#111111] whitespace-nowrap">{r.client}</td>
+                          <td className="px-3 py-2 text-[11px] text-[#555555] max-w-[10rem] truncate">{r.services.join(', ') || '—'}</td>
+                          <td className="px-3 py-2 text-[11px] text-[#555555] max-w-[16rem] truncate">{r.headline}</td>
+                          <td className="px-3 py-2 text-[11px] text-[#555555]">{r.metrics.length}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+            {importError && <p className="text-sm text-rose-700 mb-4">{importError}</p>}
+            <button onClick={downloadTemplate} className="inline-flex items-center gap-1.5 text-xs text-[#1400FF] hover:underline mb-4">
+              <Download className="w-3 h-3" /> Download CSV template
+            </button>
+            <div className="flex gap-3">
+              <button onClick={() => { setPendingRows(null); setImportError(null); }} className="flex-1 py-2.5 border border-[#E5E5E2] text-[#555555] rounded-lg text-sm hover:bg-[#F7F7F5]">
+                Cancel
+              </button>
+              <button
+                onClick={confirmImport}
+                disabled={importing || pendingRows.length === 0}
+                className="flex-1 py-2.5 bg-[#1400FF] hover:bg-[#0F00CC] text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {importing && <Loader2 className="w-4 h-4 animate-spin" />}
+                {importing ? 'Importing…' : `Import ${pendingRows.length}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -167,13 +281,23 @@ export function CaseStudiesClientView({
             Showcase measurable client ROI, strategy breakdowns, execution details, and verified metrics.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1400FF] text-white text-sm font-medium hover:bg-[#0F00CC] transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create Case Study</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <input ref={fileInput} type="file" accept=".csv,text/csv" onChange={handleFile} className="hidden" />
+          <button
+            onClick={() => fileInput.current?.click()}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#E5E5E2] bg-white text-sm font-medium text-[#111111] hover:bg-[#F0F0ED] transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Import CSV</span>
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1400FF] text-white text-sm font-medium hover:bg-[#0F00CC] transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Case Study</span>
+          </button>
+        </div>
       </div>
 
       {/* Metric Cards */}
