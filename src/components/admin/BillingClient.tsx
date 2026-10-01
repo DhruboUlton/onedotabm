@@ -29,6 +29,7 @@ import {
   recordPaymentAction,
 } from '@/lib/actions/adminActions';
 import { Card } from '@/components/ui/Card';
+import { clientLabel } from '@/lib/clientLabel';
 
 interface BillingClientProps {
   initialInvoices: InvoiceRecord[];
@@ -593,7 +594,7 @@ export function BillingClient({
                   >
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.company_name || c.contact_person}
+                        {clientLabel(c)}
                       </option>
                     ))}
                   </select>

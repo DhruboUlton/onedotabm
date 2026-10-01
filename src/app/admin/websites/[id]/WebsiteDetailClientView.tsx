@@ -23,6 +23,7 @@ import {
 import { WebsiteRecord, WebsiteStatus } from '@/types/database';
 import { ClientOption, ProjectOption } from '@/lib/services/operationsService';
 import { updateWebsiteAction, deleteWebsiteAction } from '../actions';
+import { clientLabel } from '@/lib/clientLabel';
 
 interface WebsiteDetailClientViewProps {
   website: WebsiteRecord;
@@ -264,7 +265,7 @@ export function WebsiteDetailClientView({
               >
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.company_name || c.contact_person}
+                    {clientLabel(c)}
                   </option>
                 ))}
               </select>

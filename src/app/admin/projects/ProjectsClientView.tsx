@@ -21,6 +21,7 @@ import {
 import { ProjectRecord, ProjectStatus, Priority } from '@/types/database';
 import { ClientOption, ProfileOption } from '@/lib/services/operationsService';
 import { createProjectAction, deleteProjectAction } from './actions';
+import { clientLabel } from '@/lib/clientLabel';
 
 interface ProjectsClientViewProps {
   initialProjects: ProjectRecord[];
@@ -457,7 +458,7 @@ export function ProjectsClientView({
                   >
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.company_name || c.contact_person}
+                        {clientLabel(c)}
                       </option>
                     ))}
                   </select>

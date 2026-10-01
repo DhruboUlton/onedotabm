@@ -29,6 +29,7 @@ import {
 } from '@/lib/actions/adminActions';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { clientLabel } from '@/lib/clientLabel';
 
 interface QuotationsClientProps {
   initialQuotations: QuotationRecord[];
@@ -418,7 +419,7 @@ export function QuotationsClient({
                   >
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.company_name || c.contact_person}
+                        {clientLabel(c)}
                       </option>
                     ))}
                   </select>

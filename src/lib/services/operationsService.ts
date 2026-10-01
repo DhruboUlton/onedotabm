@@ -39,7 +39,7 @@ export interface ProjectOption {
 export async function getClientsOptions(): Promise<ClientOption[]> {
   const res = await dbQuery<ClientOption>(
     `SELECT id, company_name, contact_person FROM public.clients
-     ORDER BY COALESCE(NULLIF(company_name, ''), contact_person) ASC`
+     ORDER BY contact_person ASC`
   );
   return res.rows;
 }
