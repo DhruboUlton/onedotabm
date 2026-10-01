@@ -211,7 +211,7 @@ export async function getRecentLeads(limit = 5): Promise<LeadRecord[]> {
 export async function getRecentInvoices(limit = 5): Promise<InvoiceRecord[]> {
   const res = await dbQuery<InvoiceRecord>(
     `
-    SELECT i.*, c.company_name AS client_name
+    SELECT i.*, COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name
     FROM public.invoices i
     LEFT JOIN public.clients c ON i.client_id = c.id
     ORDER BY i.created_at DESC

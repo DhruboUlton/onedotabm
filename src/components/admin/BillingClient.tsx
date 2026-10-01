@@ -593,7 +593,7 @@ export function BillingClient({
                   >
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.company_name} ({c.contact_person})
+                        {c.company_name || c.contact_person}
                       </option>
                     ))}
                   </select>

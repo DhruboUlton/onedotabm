@@ -4,8 +4,14 @@ import React, { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ClientDetailRecord } from '@/lib/services/crmService';
-import { ClientRecord } from '@/types/database';
-import { updateClientAction, deleteClientAction } from '../actions';
+import { ClientBusinessRecord, ClientRecord } from '@/types/database';
+import {
+  updateClientAction,
+  deleteClientAction,
+  createClientBusinessAction,
+  updateClientBusinessAction,
+  deleteClientBusinessAction,
+} from '../actions';
 import {
   ArrowLeft,
   Building2,
@@ -32,6 +38,7 @@ import {
   Server,
   ShieldCheck,
   Check,
+  Plus,
 } from 'lucide-react';
 
 interface ClientDetailClientViewProps {
@@ -51,6 +58,12 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
   // Edit Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Businesses are edited inline on the overview tab, not in the account modal.
+  const [businesses, setBusinesses] = useState<ClientBusinessRecord[]>(initialClient.businesses);
+  const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
+  const [isAddingBusiness, setIsAddingBusiness] = useState(false);
+  const [businessError, setBusinessError] = useState<string | null>(null);
 
   const totalRevenue = Number(client.total_revenue || 0);
   const totalInvoiced = client.invoices.reduce((acc, inv) => acc + Number(inv.total || 0), 0);
@@ -74,8 +87,9 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
     const formData = new FormData(e.currentTarget);
     const servicesRaw = formData.get('services') as string;
 
+    // company_name is not here on purpose: it mirrors the primary business and
+    // is written by the server when businesses change.
     const payload: Partial<ClientRecord> = {
-      company_name: (formData.get('company_name') as string) || client.company_name,
       contact_person: (formData.get('contact_person') as string) || client.contact_person,
       email: (formData.get('email') as string) || client.email,
       phone: (formData.get('phone') as string) || undefined,
@@ -94,6 +108,72 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
         showFeedback('Client profile updated');
       } else {
         setEditError(res.error || 'Failed to update client');
+      }
+    });
+  };
+
+  const readBusinessForm = (form: HTMLFormElement) => {
+    const data = new FormData(form);
+    const text = (key: string) => ((data.get(key) as string) || '').trim();
+    return {
+      name: text('name'),
+      industry: text('industry') || null,
+      website: text('website') || null,
+      address: text('address') || null,
+      notes: text('notes') || null,
+    };
+  };
+
+  const handleAddBusiness = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setBusinessError(null);
+    const form = e.currentTarget;
+    const payload = readBusinessForm(form);
+
+    startTransition(async () => {
+      const res = await createClientBusinessAction(client.id, payload);
+      if (res.success && res.data) {
+        setBusinesses((prev) => [...prev, res.data as ClientBusinessRecord]);
+        setIsAddingBusiness(false);
+        form.reset();
+        showFeedback('Business added');
+        router.refresh();
+      } else {
+        setBusinessError(res.error || 'Failed to add business');
+      }
+    });
+  };
+
+  const handleUpdateBusiness = (id: string, e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setBusinessError(null);
+    const payload = readBusinessForm(e.currentTarget);
+
+    startTransition(async () => {
+      const res = await updateClientBusinessAction(id, client.id, payload);
+      if (res.success && res.data) {
+        setBusinesses((prev) => prev.map((b) => (b.id === id ? (res.data as ClientBusinessRecord) : b)));
+        setEditingBusinessId(null);
+        showFeedback('Business updated');
+        router.refresh();
+      } else {
+        setBusinessError(res.error || 'Failed to update business');
+      }
+    });
+  };
+
+  const handleDeleteBusiness = (id: string, name: string) => {
+    if (!confirm(`Remove ${name} from this client?`)) return;
+    setBusinessError(null);
+
+    startTransition(async () => {
+      const res = await deleteClientBusinessAction(id, client.id);
+      if (res.success) {
+        setBusinesses((prev) => prev.filter((b) => b.id !== id));
+        showFeedback('Business removed');
+        router.refresh();
+      } else {
+        setBusinessError(res.error || 'Failed to remove business');
       }
     });
   };
@@ -152,12 +232,14 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold text-[#111111]">{client.company_name}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#111111]">{client.contact_person}</h1>
               {getStatusBadge(client.status)}
             </div>
             <p className="text-xs text-[#555555] mt-0.5">
               Account registered on {new Date(client.start_date || client.created_at).toLocaleDateString()}
-              {client.industry ? ` • ${client.industry}` : ''}
+              {businesses.length > 0
+                ? ` • ${businesses[0].name}${businesses.length > 1 ? ` +${businesses.length - 1} more` : ''}`
+                : ''}
             </p>
           </div>
         </div>
@@ -359,6 +441,206 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Businesses — one client, any number of businesses */}
+            <div className="bg-white border border-[#E5E5E2] rounded-xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E2]">
+                <h3 className="text-sm font-bold text-[#111111]">
+                  Businesses
+                  <span className="ml-2 text-xs font-normal text-[#858585]">
+                    {businesses.length} recorded
+                  </span>
+                </h3>
+                <button
+                  onClick={() => {
+                    setBusinessError(null);
+                    setIsAddingBusiness((open) => !open);
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#E5E5E2] text-[11px] font-semibold text-[#111111] hover:bg-gray-50"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add business
+                </button>
+              </div>
+
+              {businessError && (
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                  {businessError}
+                </div>
+              )}
+
+              {isAddingBusiness && (
+                <form
+                  onSubmit={handleAddBusiness}
+                  className="p-3 rounded-lg bg-[#FAFAF9] border border-[#E5E5E2] space-y-2"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <input
+                      name="name"
+                      required
+                      placeholder="Business name *"
+                      className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white"
+                    />
+                    <input
+                      name="industry"
+                      placeholder="Industry"
+                      className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white"
+                    />
+                    <input
+                      name="website"
+                      placeholder="Website"
+                      className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white"
+                    />
+                  </div>
+                  <input
+                    name="address"
+                    placeholder="Address"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingBusiness(false)}
+                      className="px-3 py-1.5 rounded-lg border border-[#E5E5E2] text-xs text-[#555555] hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="px-3 py-1.5 rounded-lg bg-[#1400FF] text-white text-xs font-semibold hover:bg-[#1000CC]"
+                    >
+                      Save business
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {businesses.length === 0 && !isAddingBusiness ? (
+                <p className="text-xs text-gray-400">
+                  No business recorded. This client is tracked by name, phone and email.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {businesses.map((business, index) => (
+                    <li
+                      key={business.id}
+                      className="p-3 rounded-lg border border-[#E5E5E2] hover:border-[#D8D8D4] transition-colors"
+                    >
+                      {editingBusinessId === business.id ? (
+                        <form
+                          onSubmit={(e) => handleUpdateBusiness(business.id, e)}
+                          className="space-y-2"
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input
+                              name="name"
+                              required
+                              defaultValue={business.name}
+                              className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
+                            />
+                            <input
+                              name="industry"
+                              defaultValue={business.industry || ''}
+                              placeholder="Industry"
+                              className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
+                            />
+                            <input
+                              name="website"
+                              defaultValue={business.website || ''}
+                              placeholder="Website"
+                              className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
+                            />
+                          </div>
+                          <input
+                            name="address"
+                            defaultValue={business.address || ''}
+                            placeholder="Address"
+                            className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingBusinessId(null)}
+                              className="px-3 py-1.5 rounded-lg border border-[#E5E5E2] text-xs text-[#555555] hover:bg-gray-100"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={isPending}
+                              className="px-3 py-1.5 rounded-lg bg-[#1400FF] text-white text-xs font-semibold hover:bg-[#1000CC]"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-3.5 h-3.5 text-[#858585] shrink-0" />
+                              <span className="text-sm font-semibold text-[#111111]">
+                                {business.name}
+                              </span>
+                              {index === 0 && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                                  Primary
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#555555]">
+                              {business.industry && <span>{business.industry}</span>}
+                              {business.website && (
+                                <a
+                                  href={
+                                    business.website.startsWith('http')
+                                      ? business.website
+                                      : `https://${business.website}`
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 hover:text-[#1400FF]"
+                                >
+                                  <Globe className="w-3 h-3" />
+                                  {business.website.replace(/^https?:\/\//, '')}
+                                </a>
+                              )}
+                              {business.address && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {business.address}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                setBusinessError(null);
+                                setEditingBusinessId(business.id);
+                              }}
+                              className="p-1.5 rounded text-gray-400 hover:text-[#1400FF] hover:bg-[#1400FF]/10"
+                              title="Edit business"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBusiness(business.id, business.name)}
+                              className="p-1.5 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                              title="Remove business"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Subscribed Services */}
@@ -774,27 +1056,18 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Company Name *</label>
-                  <input
-                    type="text"
-                    name="company_name"
-                    defaultValue={client.company_name}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Primary Contact *</label>
-                  <input
-                    type="text"
-                    name="contact_person"
-                    defaultValue={client.contact_person}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#111111] mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  name="contact_person"
+                  defaultValue={client.contact_person}
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
+                />
+                <p className="text-[11px] text-[#858585] mt-1">
+                  Businesses are managed on the overview tab.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

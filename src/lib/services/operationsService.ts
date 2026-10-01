@@ -18,7 +18,9 @@ import { logActivity } from '@/lib/services/activityService';
 
 export interface ClientOption {
   id: string;
-  company_name: string;
+  /** Null when the client runs no business; fall back to contact_person. */
+  company_name: string | null;
+  contact_person: string;
 }
 
 export interface ProfileOption {
@@ -36,7 +38,8 @@ export interface ProjectOption {
 
 export async function getClientsOptions(): Promise<ClientOption[]> {
   const res = await dbQuery<ClientOption>(
-    `SELECT id, company_name FROM public.clients ORDER BY company_name ASC`
+    `SELECT id, company_name, contact_person FROM public.clients
+     ORDER BY COALESCE(NULLIF(company_name, ''), contact_person) ASC`
   );
   return res.rows;
 }
@@ -87,7 +90,7 @@ export async function getProjects(filter?: {
        p.notes,
        p.created_at::text,
        p.updated_at::text,
-       c.company_name AS client_name,
+       COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
        pr.full_name AS project_manager_name,
        COALESCE((SELECT COUNT(*) FROM public.project_tasks pt WHERE pt.project_id = p.id), 0)::int AS tasks_count,
        COALESCE((SELECT COUNT(*) FROM public.project_tasks pt WHERE pt.project_id = p.id AND pt.status = 'completed'), 0)::int AS completed_tasks_count
@@ -127,7 +130,7 @@ export const getProjectById = cache(async (id: string): Promise<ProjectRecord | 
        p.notes,
        p.created_at::text,
        p.updated_at::text,
-       c.company_name AS client_name,
+       COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
        pr.full_name AS project_manager_name,
        COALESCE((SELECT COUNT(*) FROM public.project_tasks pt WHERE pt.project_id = p.id), 0)::int AS tasks_count,
        COALESCE((SELECT COUNT(*) FROM public.project_tasks pt WHERE pt.project_id = p.id AND pt.status = 'completed'), 0)::int AS completed_tasks_count
@@ -718,7 +721,7 @@ export async function getWebsites(filter?: {
        w.notes,
        w.created_at::text,
        w.updated_at::text,
-       c.company_name AS client_name,
+       COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
        p.project_name AS project_name
      FROM public.websites w
      LEFT JOIN public.clients c ON c.id = w.client_id
@@ -753,7 +756,7 @@ export const getWebsiteById = cache(async (id: string): Promise<WebsiteRecord | 
        w.notes,
        w.created_at::text,
        w.updated_at::text,
-       c.company_name AS client_name,
+       COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
        p.project_name AS project_name
      FROM public.websites w
      LEFT JOIN public.clients c ON c.id = w.client_id

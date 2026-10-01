@@ -16,7 +16,8 @@ import { logActivity } from '@/lib/services/activityService';
 
 export interface ClientOption {
   id: string;
-  company_name: string;
+  /** Null when the client runs no business; fall back to contact_person. */
+  company_name: string | null;
   contact_person: string;
   email: string;
 }
@@ -29,7 +30,8 @@ export interface ProjectOption {
 
 export async function getClientsForFinance(): Promise<ClientOption[]> {
   const res = await dbQuery<ClientOption>(
-    `SELECT id, company_name, contact_person, email FROM public.clients ORDER BY company_name ASC`
+    `SELECT id, company_name, contact_person, email FROM public.clients
+     ORDER BY COALESCE(NULLIF(company_name, ''), contact_person) ASC`
   );
   return res.rows;
 }
@@ -60,7 +62,7 @@ export async function getQuotations(filters?: {
   let query = `
     SELECT 
       q.*,
-      c.company_name AS client_name,
+      COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
       c.email AS client_email,
       p.project_name
     FROM public.quotations q
@@ -108,7 +110,7 @@ export async function getQuotationById(id: string): Promise<QuotationRecord | nu
     `
     SELECT 
       q.*,
-      c.company_name AS client_name,
+      COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
       c.contact_person AS client_contact,
       c.email AS client_email,
       c.phone AS client_phone,
@@ -341,7 +343,7 @@ export async function getInvoices(filters?: {
   let query = `
     SELECT 
       i.*,
-      c.company_name AS client_name,
+      COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
       c.email AS client_email,
       p.project_name
     FROM public.invoices i
@@ -391,7 +393,7 @@ export async function getInvoiceById(id: string): Promise<InvoiceRecord | null> 
     `
     SELECT 
       i.*,
-      c.company_name AS client_name,
+      COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name,
       c.contact_person AS client_contact,
       c.email AS client_email,
       c.phone AS client_phone,

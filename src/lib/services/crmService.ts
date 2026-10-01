@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { dbQuery } from '@/lib/db';
 import { logActivity } from '@/lib/services/activityService';
+import type { ClientBusinessInput } from '@/lib/forms/clientBusinesses';
 import {
   LeadRecord,
   LeadStatus,
@@ -8,14 +9,18 @@ import {
   ProspectRecord,
   ProspectStage,
   ClientRecord,
+  ClientBusinessRecord,
   ProjectRecord,
   WebsiteRecord,
   QuotationRecord,
   InvoiceRecord,
 } from '@/types/database';
 
+export type { ClientBusinessInput };
+
 export interface ClientDetailRecord extends ClientRecord {
   account_manager_name?: string | null;
+  businesses: ClientBusinessRecord[];
   projects: ProjectRecord[];
   websites: WebsiteRecord[];
   quotations: QuotationRecord[];
@@ -599,7 +604,8 @@ export async function getClients(options: GetClientsOptions = {}): Promise<Clien
   if (search && search.trim() !== '') {
     const s = `%${search.trim()}%`;
     conditions.push(
-      `(c.company_name ILIKE $${paramIndex} OR c.contact_person ILIKE $${paramIndex} OR c.email ILIKE $${paramIndex} OR c.industry ILIKE $${paramIndex})`
+      `(c.company_name ILIKE $${paramIndex} OR c.contact_person ILIKE $${paramIndex} OR c.email ILIKE $${paramIndex} OR c.phone ILIKE $${paramIndex} OR c.industry ILIKE $${paramIndex}
+        OR EXISTS (SELECT 1 FROM public.client_businesses b WHERE b.client_id = c.id AND b.name ILIKE $${paramIndex}))`
     );
     params.push(s);
     paramIndex++;
@@ -612,7 +618,11 @@ export async function getClients(options: GetClientsOptions = {}): Promise<Clien
       c.*,
       p.full_name AS account_manager_name,
       COALESCE((SELECT COUNT(*) FROM public.projects WHERE client_id = c.id), 0)::int AS project_count,
-      COALESCE((SELECT SUM(amount_paid) FROM public.invoices WHERE client_id = c.id), 0)::numeric AS total_revenue
+      COALESCE((SELECT SUM(amount_paid) FROM public.invoices WHERE client_id = c.id), 0)::numeric AS total_revenue,
+      COALESCE((
+        SELECT array_agg(b.name ORDER BY b.position, b.created_at)
+        FROM public.client_businesses b WHERE b.client_id = c.id
+      ), '{}') AS business_names
     FROM public.clients c
     LEFT JOIN public.profiles p ON c.account_manager = p.id
     ${whereClause}
@@ -624,6 +634,7 @@ export async function getClients(options: GetClientsOptions = {}): Promise<Clien
     ...row,
     project_count: Number(row.project_count || 0),
     total_revenue: Number(row.total_revenue || 0),
+    business_names: row.business_names || [],
   }));
 }
 
@@ -646,9 +657,15 @@ export const getClientById = cache(async (id: string): Promise<ClientDetailRecor
   if (!client) return null;
 
   // 2. Fetch linked items concurrently
-  const [projectsRes, websitesRes, quotationsRes, invoicesRes] = await Promise.all([
+  const [businessesRes, projectsRes, websitesRes, quotationsRes, invoicesRes] = await Promise.all([
+    dbQuery<ClientBusinessRecord>(
+      `SELECT * FROM public.client_businesses
+       WHERE client_id = $1
+       ORDER BY position, created_at`,
+      [id]
+    ),
     dbQuery<ProjectRecord>(
-      `SELECT pr.*, c.company_name AS client_name 
+      `SELECT pr.*, COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name 
        FROM public.projects pr 
        JOIN public.clients c ON pr.client_id = c.id 
        WHERE pr.client_id = $1 
@@ -656,7 +673,7 @@ export const getClientById = cache(async (id: string): Promise<ClientDetailRecor
       [id]
     ),
     dbQuery<WebsiteRecord>(
-      `SELECT w.*, c.company_name AS client_name 
+      `SELECT w.*, COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name 
        FROM public.websites w 
        JOIN public.clients c ON w.client_id = c.id 
        WHERE w.client_id = $1 
@@ -664,7 +681,7 @@ export const getClientById = cache(async (id: string): Promise<ClientDetailRecor
       [id]
     ),
     dbQuery<QuotationRecord>(
-      `SELECT q.*, c.company_name AS client_name 
+      `SELECT q.*, COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name 
        FROM public.quotations q 
        JOIN public.clients c ON q.client_id = c.id 
        WHERE q.client_id = $1 
@@ -672,7 +689,7 @@ export const getClientById = cache(async (id: string): Promise<ClientDetailRecor
       [id]
     ),
     dbQuery<InvoiceRecord>(
-      `SELECT inv.*, c.company_name AS client_name 
+      `SELECT inv.*, COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name 
        FROM public.invoices inv 
        JOIN public.clients c ON inv.client_id = c.id 
        WHERE inv.client_id = $1 
@@ -685,6 +702,8 @@ export const getClientById = cache(async (id: string): Promise<ClientDetailRecor
     ...client,
     project_count: Number(client.project_count || 0),
     total_revenue: Number(client.total_revenue || 0),
+    businesses: businessesRes.rows,
+    business_names: businessesRes.rows.map((b) => b.name),
     projects: projectsRes.rows.map((p) => ({
       ...p,
       budget: Number(p.budget || 0),
@@ -710,7 +729,108 @@ export const getClientById = cache(async (id: string): Promise<ClientDetailRecor
   };
 });
 
-export async function createClient(data: Partial<ClientRecord>): Promise<ClientRecord> {
+/**
+ * clients.company_name is a label mirrored from the primary business, so it has
+ * exactly one writer: this function. Call it after any change to a client's
+ * businesses.
+ */
+async function syncPrimaryBusinessName(clientId: string): Promise<void> {
+  await dbQuery(
+    `UPDATE public.clients
+     SET company_name = (
+       SELECT b.name FROM public.client_businesses b
+       WHERE b.client_id = $1
+       ORDER BY b.position, b.created_at
+       LIMIT 1
+     ), updated_at = NOW()
+     WHERE id = $1`,
+    [clientId]
+  );
+}
+
+export async function listClientBusinesses(clientId: string): Promise<ClientBusinessRecord[]> {
+  const res = await dbQuery<ClientBusinessRecord>(
+    `SELECT * FROM public.client_businesses WHERE client_id = $1 ORDER BY position, created_at`,
+    [clientId]
+  );
+  return res.rows;
+}
+
+export async function createClientBusiness(
+  clientId: string,
+  data: Partial<ClientBusinessInput>
+): Promise<ClientBusinessRecord> {
+  const res = await dbQuery<ClientBusinessRecord>(
+    `INSERT INTO public.client_businesses (client_id, name, industry, website, address, notes, position)
+     VALUES ($1, $2, $3, $4, $5, $6,
+       COALESCE((SELECT MAX(position) + 1 FROM public.client_businesses WHERE client_id = $1), 0))
+     RETURNING *`,
+    [
+      clientId,
+      data.name,
+      data.industry || null,
+      data.website || null,
+      data.address || null,
+      data.notes || null,
+    ]
+  );
+
+  await syncPrimaryBusinessName(clientId);
+  return res.rows[0];
+}
+
+export async function updateClientBusiness(
+  id: string,
+  data: Partial<ClientBusinessInput>
+): Promise<ClientBusinessRecord> {
+  const fields: string[] = [];
+  const params: any[] = [id];
+  let paramIndex = 2;
+
+  for (const field of ['name', 'industry', 'website', 'address', 'notes'] as const) {
+    if (field in data) {
+      fields.push(`${field} = $${paramIndex++}`);
+      params.push(data[field] === undefined ? null : data[field]);
+    }
+  }
+
+  if (fields.length === 0) {
+    const res = await dbQuery<ClientBusinessRecord>(
+      `SELECT * FROM public.client_businesses WHERE id = $1`,
+      [id]
+    );
+    if (!res.rows[0]) throw new Error(`Business ${id} not found`);
+    return res.rows[0];
+  }
+
+  fields.push('updated_at = NOW()');
+
+  const res = await dbQuery<ClientBusinessRecord>(
+    `UPDATE public.client_businesses SET ${fields.join(', ')} WHERE id = $1 RETURNING *`,
+    params
+  );
+  const updated = res.rows[0];
+  if (!updated) throw new Error(`Business ${id} not found`);
+
+  await syncPrimaryBusinessName(updated.client_id);
+  return updated;
+}
+
+export async function deleteClientBusiness(id: string): Promise<boolean> {
+  const res = await dbQuery<{ client_id: string }>(
+    `DELETE FROM public.client_businesses WHERE id = $1 RETURNING client_id`,
+    [id]
+  );
+  const clientId = res.rows[0]?.client_id;
+  if (!clientId) return false;
+
+  await syncPrimaryBusinessName(clientId);
+  return true;
+}
+
+export async function createClient(
+  data: Partial<ClientRecord> & { businesses?: Partial<ClientBusinessInput>[] }
+): Promise<ClientRecord> {
   const res = await dbQuery<ClientRecord>(
     `INSERT INTO public.clients (
       company_name,
@@ -744,17 +864,32 @@ export async function createClient(data: Partial<ClientRecord>): Promise<ClientR
     ]
   );
 
-  const client = res.rows[0];
+  let client = res.rows[0];
+
+  const businesses = (data.businesses || []).filter((b) => b.name && b.name.trim() !== '');
+  for (const business of businesses) {
+    await createClientBusiness(client.id, business);
+  }
+
+  if (businesses.length > 0) {
+    // syncPrimaryBusinessName wrote company_name after the inserts above.
+    const refreshed = await dbQuery<ClientRecord>(
+      `SELECT * FROM public.clients WHERE id = $1`,
+      [client.id]
+    );
+    client = refreshed.rows[0] || client;
+  }
 
   await logActivity({
     action: 'client.created',
     entityType: 'client',
     entityId: client.id,
-    entityTitle: client.company_name,
+    entityTitle: client.contact_person,
     metadata: {
       contactPerson: client.contact_person,
       email: client.email,
-      industry: client.industry,
+      phone: client.phone,
+      businesses: businesses.map((b) => b.name),
       status: client.status,
     },
   });
@@ -811,7 +946,7 @@ export async function updateClient(id: string, data: Partial<ClientRecord>): Pro
     action: 'client.updated',
     entityType: 'client',
     entityId: id,
-    entityTitle: updated.company_name,
+    entityTitle: updated.company_name || updated.contact_person,
     metadata: {
       updatedFields: Object.keys(data),
       status: updated.status,
@@ -830,7 +965,7 @@ export async function deleteClient(id: string): Promise<boolean> {
       action: 'client.deleted',
       entityType: 'client',
       entityId: id,
-      entityTitle: existing.company_name,
+      entityTitle: existing.company_name || existing.contact_person,
       metadata: { contactPerson: existing.contact_person, email: existing.email },
     });
   }

@@ -7,8 +7,13 @@ import {
   createClient,
   updateClient,
   deleteClient,
+  createClientBusiness,
+  updateClientBusiness,
+  deleteClientBusiness,
+  ClientBusinessInput,
 } from '@/lib/services/crmService';
-import { ClientRecord } from '@/types/database';
+import { ClientBusinessRecord, ClientRecord } from '@/types/database';
+import { readBusinesses } from '@/lib/forms/clientBusinesses';
 
 export interface ActionResponse<T = any> {
   success: boolean;
@@ -23,12 +28,12 @@ export async function createClientAction(
   if (!admin) return { success: false, error: 'Unauthorized' };
 
   try {
-    let payload: Partial<ClientRecord> = {};
+    let payload: Partial<ClientRecord> & { businesses?: Partial<ClientBusinessInput>[] } = {};
 
     if (input instanceof FormData) {
       const servicesRaw = input.get('services') as string | null;
       payload = {
-        company_name: (input.get('company_name') as string) || '',
+        businesses: readBusinesses(input),
         contact_person: (input.get('contact_person') as string) || '',
         email: (input.get('email') as string) || '',
         phone: (input.get('phone') as string) || undefined,
@@ -44,8 +49,10 @@ export async function createClientAction(
       payload = input;
     }
 
-    if (!payload.company_name || !payload.contact_person || !payload.email) {
-      return { success: false, error: 'Company Name, Contact Person, and Email are required.' };
+    // A client is a person: a name, an email and a phone number. Businesses are
+    // optional, and there can be any number of them.
+    if (!payload.contact_person?.trim() || !payload.email?.trim() || !payload.phone?.trim()) {
+      return { success: false, error: 'Name, Email and Phone are required.' };
     }
 
     const client = await createClient(payload);
@@ -86,5 +93,66 @@ export async function deleteClientAction(id: string): Promise<ActionResponse<boo
   } catch (error: any) {
     console.error('Error deleting client:', error);
     return { success: false, error: error.message || 'Failed to delete client' };
+  }
+}
+
+export async function createClientBusinessAction(
+  clientId: string,
+  data: Partial<ClientBusinessInput>
+): Promise<ActionResponse<ClientBusinessRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
+  if (!data.name?.trim()) return { success: false, error: 'Business name is required.' };
+
+  try {
+    const business = await createClientBusiness(clientId, data);
+    revalidatePath('/admin/clients');
+    revalidatePath(`/admin/clients/${clientId}`);
+    return { success: true, data: business };
+  } catch (error: any) {
+    console.error('Error creating business:', error);
+    return { success: false, error: error.message || 'Failed to add business' };
+  }
+}
+
+export async function updateClientBusinessAction(
+  id: string,
+  clientId: string,
+  data: Partial<ClientBusinessInput>
+): Promise<ActionResponse<ClientBusinessRecord>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
+  if ('name' in data && !data.name?.trim()) {
+    return { success: false, error: 'Business name is required.' };
+  }
+
+  try {
+    const business = await updateClientBusiness(id, data);
+    revalidatePath('/admin/clients');
+    revalidatePath(`/admin/clients/${clientId}`);
+    return { success: true, data: business };
+  } catch (error: any) {
+    console.error('Error updating business:', error);
+    return { success: false, error: error.message || 'Failed to update business' };
+  }
+}
+
+export async function deleteClientBusinessAction(
+  id: string,
+  clientId: string
+): Promise<ActionResponse<boolean>> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const deleted = await deleteClientBusiness(id);
+    revalidatePath('/admin/clients');
+    revalidatePath(`/admin/clients/${clientId}`);
+    return { success: true, data: deleted };
+  } catch (error: any) {
+    console.error('Error deleting business:', error);
+    return { success: false, error: error.message || 'Failed to delete business' };
   }
 }

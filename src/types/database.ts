@@ -75,9 +75,29 @@ export interface ProspectRecord {
   assigned_to_name?: string | null;
 }
 
+/** One of the businesses a client runs. A client may have none, one or many. */
+export interface ClientBusinessRecord {
+  id: string;
+  client_id: string;
+  name: string;
+  industry?: string | null;
+  website?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  /** Lowest position is the primary business. */
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ClientRecord {
   id: string;
-  company_name: string;
+  /**
+   * Denormalized label only: the name of the client's primary business, or null
+   * when they have none. The real list lives in client_businesses, and this is
+   * written from it — a client is identified by contact_person, email and phone.
+   */
+  company_name?: string | null;
   contact_person: string;
   email: string;
   phone?: string | null;
@@ -94,6 +114,8 @@ export interface ClientRecord {
   // Joined aggregates
   project_count?: number;
   total_revenue?: number;
+  /** Names of every business this client runs, primary first. */
+  business_names?: string[];
 }
 
 export interface ProjectRecord {

@@ -12,7 +12,6 @@ import {
   Building2,
   Mail,
   Phone,
-  Globe,
   Layers,
   DollarSign,
   Briefcase,
@@ -39,6 +38,9 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // One blank row to start: businesses are optional, but adding the first one
+  // should not cost a click.
+  const [businessRowCount, setBusinessRowCount] = useState(1);
 
   // Filter clients
   const filteredClients = initialClients.filter((c) => {
@@ -46,9 +48,10 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       const match =
-        c.company_name.toLowerCase().includes(q) ||
         c.contact_person.toLowerCase().includes(q) ||
         c.email.toLowerCase().includes(q) ||
+        (c.phone || '').toLowerCase().includes(q) ||
+        (c.business_names || []).some((name) => name.toLowerCase().includes(q)) ||
         (c.industry && c.industry.toLowerCase().includes(q)) ||
         (c.services && c.services.some((s) => s.toLowerCase().includes(q)));
       if (!match) return false;
@@ -83,6 +86,7 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
       const res = await createClientAction(formData);
       if (res.success) {
         setIsAddModalOpen(false);
+        setBusinessRowCount(1);
         router.refresh();
       } else {
         setFormError(res.error || 'Failed to create client');
@@ -129,6 +133,7 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
         <button
           onClick={() => {
             setFormError(null);
+            setBusinessRowCount(1);
             setIsAddModalOpen(true);
           }}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1400FF] text-white text-xs font-semibold hover:bg-[#1000CC] transition-colors shadow-sm"
@@ -211,7 +216,7 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search clients by company, contact..."
+            placeholder="Search by name, phone, email, business..."
             className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E5E5E2] bg-white text-xs text-[#111111] placeholder:text-gray-400 focus:outline-none focus:border-[#1400FF]"
           />
         </div>
@@ -237,9 +242,8 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#E5E5E2] bg-[#FAFAF9] text-[11px] font-semibold text-[#858585] uppercase tracking-wider">
-                <th className="py-3 px-4">Company Name</th>
-                <th className="py-3 px-4">Primary Contact</th>
-                <th className="py-3 px-4">Industry</th>
+                <th className="py-3 px-4">Client</th>
+                <th className="py-3 px-4">Businesses</th>
                 <th className="py-3 px-4">Active Services</th>
                 <th className="py-3 px-4">Lifetime Revenue</th>
                 <th className="py-3 px-4">Projects</th>
@@ -250,57 +254,57 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
             <tbody className="divide-y divide-[#E5E5E2] text-sm">
               {filteredClients.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-500">
+                  <td colSpan={7} className="py-12 text-center text-gray-500">
                     No clients found.
                   </td>
                 </tr>
               ) : (
                 filteredClients.map((client) => (
                   <tr key={client.id} className="hover:bg-[#F9F9F8] transition-colors group">
-                    {/* Company */}
+                    {/* Client — the person is the account */}
                     <td className="py-3 px-4">
                       <div className="flex flex-col">
                         <Link
                           href={`/admin/clients/${client.id}`}
                           className="font-bold text-[#111111] hover:text-[#1400FF] transition-colors flex items-center gap-1.5"
                         >
-                          <span>{client.company_name}</span>
+                          <span>{client.contact_person}</span>
                           <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#1400FF]" />
                         </Link>
-                        {client.website && (
+                        <a
+                          href={`mailto:${client.email}`}
+                          className="text-xs text-gray-500 hover:text-[#1400FF] mt-0.5"
+                        >
+                          {client.email}
+                        </a>
+                        {client.phone && (
                           <a
-                            href={
-                              client.website.startsWith('http')
-                                ? client.website
-                                : `https://${client.website}`
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-[#858585] hover:text-[#1400FF] flex items-center gap-1 mt-0.5"
+                            href={`tel:${client.phone}`}
+                            className="text-xs text-gray-500 hover:text-[#1400FF] flex items-center gap-1 mt-0.5"
                           >
-                            <Globe className="w-3 h-3" />
-                            <span>{client.website.replace(/^https?:\/\//, '')}</span>
+                            <Phone className="w-3 h-3" />
+                            <span>{client.phone}</span>
                           </a>
                         )}
                       </div>
                     </td>
 
-                    {/* Contact Person */}
+                    {/* Businesses — a client may run several, or none */}
                     <td className="py-3 px-4">
-                      <div className="flex flex-col text-xs">
-                        <span className="font-semibold text-[#111111]">{client.contact_person}</span>
-                        <a
-                          href={`mailto:${client.email}`}
-                          className="text-gray-500 hover:text-[#1400FF] mt-0.5"
-                        >
-                          {client.email}
-                        </a>
-                      </div>
-                    </td>
-
-                    {/* Industry */}
-                    <td className="py-3 px-4 text-xs font-medium text-gray-700">
-                      {client.industry || 'General Business'}
+                      {client.business_names && client.business_names.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-[16rem]">
+                          {client.business_names.map((name, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-700 border border-blue-100 font-medium"
+                            >
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">No business recorded</span>
+                      )}
                     </td>
 
                     {/* Services */}
@@ -368,8 +372,10 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
           <div className="bg-white rounded-2xl border border-[#E5E5E2] w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-[#E5E5E2] flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-[#111111]">Add New Client Account</h3>
-                <p className="text-xs text-[#555555]">Register a corporate client profile.</p>
+                <h3 className="text-lg font-bold text-[#111111]">Add New Client</h3>
+                <p className="text-xs text-[#555555]">
+                  Name, phone and email are all that is needed. Everything else can come later.
+                </p>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
@@ -387,70 +393,89 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Company Name *</label>
-                  <input
-                    type="text"
-                    name="company_name"
-                    required
-                    placeholder="e.g. Acme Corporation"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Primary Contact *</label>
-                  <input
-                    type="text"
-                    name="contact_person"
-                    required
-                    placeholder="e.g. John Doe"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#111111] mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  name="contact_person"
+                  required
+                  placeholder="e.g. Rafiq Hasan"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#111111] mb-1">Phone *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    placeholder="+880 1700-000000"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#111111] mb-1">Email *</label>
                   <input
                     type="email"
                     name="email"
                     required
-                    placeholder="john@acme.com"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="+880 1700-000000"
+                    placeholder="rafiq@example.com"
                     className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Industry</label>
-                  <input
-                    type="text"
-                    name="industry"
-                    placeholder="e.g. EdTech, Fashion, Logistics"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
+              {/* Businesses — optional, and a client may have several */}
+              <div className="pt-2 border-t border-[#E5E5E2]">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#111111]">Businesses</label>
+                    <p className="text-[11px] text-[#858585]">
+                      Optional. Add one row per business this client runs.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBusinessRowCount((count) => count + 1)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#E5E5E2] text-[11px] font-semibold text-[#111111] hover:bg-gray-50"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add business
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Website URL</label>
-                  <input
-                    type="url"
-                    name="website"
-                    placeholder="https://acme.com"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
+
+                <div className="space-y-2">
+                  {Array.from({ length: businessRowCount }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2 rounded-lg bg-[#FAFAF9] border border-[#E5E5E2]"
+                    >
+                      <input
+                        type="text"
+                        name={`businesses[${index}][name]`}
+                        placeholder="Business name"
+                        className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white focus:outline-none focus:border-[#1400FF]"
+                      />
+                      <input
+                        type="text"
+                        name={`businesses[${index}][industry]`}
+                        placeholder="Industry"
+                        className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white focus:outline-none focus:border-[#1400FF]"
+                      />
+                      <input
+                        type="text"
+                        name={`businesses[${index}][website]`}
+                        placeholder="Website"
+                        className="px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white focus:outline-none focus:border-[#1400FF]"
+                      />
+                    </div>
+                  ))}
                 </div>
+                <p className="text-[11px] text-[#858585] mt-1.5">
+                  Rows left empty are ignored.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -490,7 +515,7 @@ export function ClientsClientView({ initialClients }: ClientsClientViewProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#111111] mb-1">Office Address</label>
+                <label className="block text-xs font-semibold text-[#111111] mb-1">Address</label>
                 <input
                   type="text"
                   name="address"

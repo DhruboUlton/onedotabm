@@ -51,7 +51,7 @@ export async function getPortfolioItems(filter?: {
        p.sort_order,
        p.created_at::text,
        p.updated_at::text,
-       c.company_name AS client_name
+       COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name
      FROM public.portfolio_items p
      LEFT JOIN public.clients c ON c.id = p.client_id
      WHERE ($1::text IS NULL OR p.category = $1)
@@ -87,7 +87,7 @@ export const getPortfolioItemById = cache(async (id: string): Promise<PortfolioI
        p.sort_order,
        p.created_at::text,
        p.updated_at::text,
-       c.company_name AS client_name
+       COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name
      FROM public.portfolio_items p
      LEFT JOIN public.clients c ON c.id = p.client_id
      WHERE p.id::text = $1 OR p.slug = $1`,

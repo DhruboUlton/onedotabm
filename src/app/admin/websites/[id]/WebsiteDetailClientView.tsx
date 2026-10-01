@@ -264,7 +264,7 @@ export function WebsiteDetailClientView({
               >
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.company_name}
+                    {c.company_name || c.contact_person}
                   </option>
                 ))}
               </select>
