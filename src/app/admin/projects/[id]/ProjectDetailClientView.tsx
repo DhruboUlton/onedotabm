@@ -26,7 +26,6 @@ import {
   ProjectMilestoneRecord,
   TaskStatus,
   ProjectStatus,
-  Priority,
 } from '@/types/database';
 import { ClientOption, ProfileOption } from '@/lib/services/operationsService';
 import {
@@ -61,7 +60,7 @@ export function ProjectDetailClientView({
 
   // Quick Task Creation
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskPriority, setNewTaskPriority] = useState<Priority>('medium');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
 
@@ -142,7 +141,7 @@ export function ProjectDetailClientView({
     const res = await createTaskAction({
       project_id: project.id,
       title: newTaskTitle.trim(),
-      priority: newTaskPriority,
+      description: newTaskDescription.trim() || null,
       due_date: newTaskDueDate || null,
       status: 'todo',
     });
@@ -151,6 +150,7 @@ export function ProjectDetailClientView({
     if (res.success && res.data) {
       setTasks([...tasks, res.data]);
       setNewTaskTitle('');
+      setNewTaskDescription('');
       setNewTaskDueDate('');
     } else {
       alert(res.error || 'Failed to add task');
@@ -558,38 +558,37 @@ export function ProjectDetailClientView({
             </div>
 
             {/* Quick Add Task Form */}
-            <form onSubmit={handleAddTask} className="flex flex-col sm:flex-row gap-2.5">
-              <input
-                type="text"
-                placeholder="Add a new deliverable task..."
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="flex-1 px-3.5 py-2 text-sm bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF] focus:bg-white transition-colors"
+            <form onSubmit={handleAddTask} className="space-y-2.5">
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <input
+                  type="text"
+                  placeholder="Add a new deliverable task..."
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  className="flex-1 px-3.5 py-2 text-sm bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF] focus:bg-white transition-colors"
+                />
+                <input
+                  type="date"
+                  value={newTaskDueDate}
+                  onChange={(e) => setNewTaskDueDate(e.target.value)}
+                  className="px-3 py-2 text-xs bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
+                />
+                <button
+                  type="submit"
+                  disabled={isAddingTask || !newTaskTitle.trim()}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#1400FF] text-white text-xs font-medium hover:bg-[#0F00CC] disabled:opacity-50 transition-colors shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Task</span>
+                </button>
+              </div>
+              <textarea
+                placeholder="Description (optional)"
+                value={newTaskDescription}
+                onChange={(e) => setNewTaskDescription(e.target.value)}
+                rows={2}
+                className="w-full px-3.5 py-2 text-sm bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF] focus:bg-white transition-colors resize-y"
               />
-              <select
-                value={newTaskPriority}
-                onChange={(e) => setNewTaskPriority(e.target.value as Priority)}
-                className="px-3 py-2 text-xs bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-              >
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-                <option value="urgent">Urgent</option>
-              </select>
-              <input
-                type="date"
-                value={newTaskDueDate}
-                onChange={(e) => setNewTaskDueDate(e.target.value)}
-                className="px-3 py-2 text-xs bg-[#F7F7F5] rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-              />
-              <button
-                type="submit"
-                disabled={isAddingTask || !newTaskTitle.trim()}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#1400FF] text-white text-xs font-medium hover:bg-[#0F00CC] disabled:opacity-50 transition-colors shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Task</span>
-              </button>
             </form>
 
             {/* Task List */}
@@ -632,7 +631,7 @@ export function ProjectDetailClientView({
                             {task.title}
                           </p>
                           {task.description && (
-                            <p className="text-xs text-[#858585] line-clamp-1 mt-0.5">
+                            <p className="text-xs text-[#858585] whitespace-pre-line mt-0.5">
                               {task.description}
                             </p>
                           )}
@@ -647,19 +646,6 @@ export function ProjectDetailClientView({
                             {task.due_date}
                           </span>
                         )}
-
-                        {/* Priority Badge */}
-                        <span
-                          className={`text-[10px] font-mono px-2 py-0.5 rounded capitalize ${
-                            task.priority === 'urgent'
-                              ? 'bg-rose-100 text-rose-700 font-bold'
-                              : task.priority === 'high'
-                              ? 'bg-orange-100 text-orange-700 font-medium'
-                              : 'bg-gray-100 text-[#555555]'
-                          }`}
-                        >
-                          {task.priority}
-                        </span>
 
                         {/* Status Button (Cycles) */}
                         <button
