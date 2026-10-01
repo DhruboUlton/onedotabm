@@ -7,8 +7,6 @@ import {
   LeadRecord,
   LeadStatus,
   Priority,
-  ProspectRecord,
-  ProspectStage,
   ClientRecord,
   ClientBusinessRecord,
   ProjectRecord,
@@ -276,313 +274,42 @@ export async function deleteLead(id: string): Promise<boolean> {
   return (res.rowCount ?? 0) > 0;
 }
 
-export async function convertLeadToProspect(
-  leadId: string,
-  dealData: Partial<ProspectRecord> = {}
-): Promise<ProspectRecord> {
+/**
+ * Turns a lead into a client: the person becomes the client, the company (if
+ * any) their first business, and the lead is marked won. A client is
+ * identified by email, so an existing one is reported rather than duplicated.
+ */
+export async function convertLeadToClient(leadId: string): Promise<ClientRecord> {
   const lead = await getLeadById(leadId);
-  if (!lead) {
-    throw new Error(`Lead with ID ${leadId} not found`);
+  if (!lead) throw new Error(`Lead with ID ${leadId} not found`);
+
+  const existing = await dbQuery<{ id: string }>(
+    `SELECT id FROM public.clients WHERE lower(email) = lower($1)`,
+    [lead.email]
+  );
+  if (existing.rows[0]) {
+    throw new Error('A client with this email already exists. Open them from Clients instead.');
   }
 
-  // Calculate estimated deal value
-  let estimatedValue = dealData.estimated_deal_value;
-  if (estimatedValue === undefined || estimatedValue === null) {
-    const rawBudget = lead.budget ? lead.budget.replace(/[^0-9.]/g, '') : '0';
-    estimatedValue = parseFloat(rawBudget) || 0;
-  }
-
-  const company = dealData.company || lead.company || lead.name;
-  const contactPerson = dealData.contact_person || lead.name;
-  const email = dealData.email || lead.email;
-  const phone = dealData.phone || lead.phone || null;
-  const services = dealData.services && dealData.services.length > 0
-    ? dealData.services
-    : lead.service_interested
-      ? [lead.service_interested]
-      : [];
-  const currency = dealData.currency || 'BDT';
-  const probability = dealData.probability ?? 60;
-  const stage = dealData.stage || 'qualified';
-  const expectedCloseDate = dealData.expected_close_date || null;
-  const assignedTo = dealData.assigned_to || lead.assigned_to || null;
-  const notes = dealData.notes || lead.notes || `Converted from Lead: ${lead.name}`;
-
-  // Insert into prospects
-  const prospectRes = await dbQuery<ProspectRecord>(
-    `INSERT INTO public.prospects (
-      lead_id,
-      company,
-      contact_person,
-      email,
-      phone,
-      services,
-      estimated_deal_value,
-      currency,
-      probability,
-      stage,
-      expected_close_date,
-      assigned_to,
-      notes
-    ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
-    ) RETURNING *`,
-    [
-      leadId,
-      company,
-      contactPerson,
-      email,
-      phone,
-      services,
-      estimatedValue,
-      currency,
-      probability,
-      stage,
-      expectedCloseDate,
-      assignedTo,
-      notes,
-    ]
-  );
-
-  const prospect = prospectRes.rows[0];
-
-  // Mark lead as qualified/won
-  await dbQuery(
-    `UPDATE public.leads 
-     SET status = 'qualified', updated_at = NOW() 
-     WHERE id = $1`,
-    [leadId]
-  );
-
-  await logActivity({
-    action: 'lead.converted_to_prospect',
-    entityType: 'prospect',
-    entityId: prospect.id,
-    entityTitle: prospect.company,
-    metadata: {
-      leadId,
-      leadName: lead.name,
-      dealValue: prospect.estimated_deal_value,
-      stage: prospect.stage,
-    },
+  const client = await createClient({
+    contact_person: lead.name,
+    email: lead.email,
+    phone: lead.phone || undefined,
+    website: lead.website || undefined,
+    services: lead.service_interested ? [lead.service_interested] : [],
+    notes: lead.message || undefined,
+    businesses: lead.company ? [{ name: lead.company, website: lead.website || undefined }] : [],
   });
 
-  return prospect;
-}
-
-// ============================================================================
-// 2. PROSPECTS SERVICE
-// ============================================================================
-
-export interface GetProspectsOptions {
-  stage?: ProspectStage | 'all';
-  search?: string;
-}
-
-export async function getProspects(options: GetProspectsOptions = {}): Promise<ProspectRecord[]> {
-  const { stage, search } = options;
-
-  const conditions: string[] = [];
-  const params: any[] = [];
-  let paramIndex = 1;
-
-  if (stage && stage !== 'all') {
-    conditions.push(`pr.stage = $${paramIndex++}`);
-    params.push(stage);
-  }
-
-  if (search && search.trim() !== '') {
-    const s = `%${search.trim()}%`;
-    conditions.push(
-      `(pr.company ILIKE $${paramIndex} OR pr.contact_person ILIKE $${paramIndex} OR pr.email ILIKE $${paramIndex} OR pr.phone ILIKE $${paramIndex})`
-    );
-    params.push(s);
-    paramIndex++;
-  }
-
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-  const query = `
-    SELECT 
-      pr.*,
-      p.full_name AS assigned_to_name
-    FROM public.prospects pr
-    LEFT JOIN public.profiles p ON pr.assigned_to = p.id
-    ${whereClause}
-    ORDER BY pr.created_at DESC
-  `;
-
-  const res = await dbQuery<ProspectRecord>(query, params);
-  return res.rows;
-}
-
-// cache(): see getLeadById above — same double-fetch shape.
-export const getProspectById = cache(async (id: string): Promise<ProspectRecord | null> => {
-  if (!isUuid(id)) return null;
-
-  const query = `
-    SELECT
-      pr.*,
-      p.full_name AS assigned_to_name
-    FROM public.prospects pr
-    LEFT JOIN public.profiles p ON pr.assigned_to = p.id
-    WHERE pr.id = $1
-  `;
-  const res = await dbQuery<ProspectRecord>(query, [id]);
-  return res.rows[0] || null;
-});
-
-export async function createProspect(data: Partial<ProspectRecord>): Promise<ProspectRecord> {
-  const res = await dbQuery<ProspectRecord>(
-    `INSERT INTO public.prospects (
-      lead_id,
-      company,
-      contact_person,
-      email,
-      phone,
-      services,
-      estimated_deal_value,
-      currency,
-      probability,
-      stage,
-      expected_close_date,
-      assigned_to,
-      notes
-    ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
-    ) RETURNING *`,
-    [
-      data.lead_id || null,
-      data.company,
-      data.contact_person,
-      data.email,
-      data.phone || null,
-      data.services || [],
-      data.estimated_deal_value || 0,
-      data.currency || 'BDT',
-      data.probability ?? 50,
-      data.stage || 'qualified',
-      data.expected_close_date || null,
-      data.assigned_to || null,
-      data.notes || null,
-    ]
-  );
-
-  const prospect = res.rows[0];
-
+  await dbQuery(`UPDATE public.leads SET status = 'won', updated_at = NOW() WHERE id = $1`, [leadId]);
   await logActivity({
-    action: 'prospect.created',
-    entityType: 'prospect',
-    entityId: prospect.id,
-    entityTitle: prospect.company,
-    metadata: {
-      contactPerson: prospect.contact_person,
-      estimatedDealValue: prospect.estimated_deal_value,
-      stage: prospect.stage,
-    },
+    action: 'lead.converted_to_client',
+    entityType: 'client',
+    entityId: client.id,
+    entityTitle: client.contact_person,
+    metadata: { leadId },
   });
-
-  return prospect;
-}
-
-export async function updateProspect(id: string, data: Partial<ProspectRecord>): Promise<ProspectRecord> {
-  const fields: string[] = [];
-  const params: any[] = [id];
-  let paramIndex = 2;
-
-  const allowedFields: (keyof ProspectRecord)[] = [
-    'company',
-    'contact_person',
-    'email',
-    'phone',
-    'services',
-    'estimated_deal_value',
-    'currency',
-    'probability',
-    'stage',
-    'expected_close_date',
-    'assigned_to',
-    'notes',
-  ];
-
-  for (const field of allowedFields) {
-    if (field in data) {
-      fields.push(`${field} = $${paramIndex++}`);
-      params.push(data[field] === undefined ? null : data[field]);
-    }
-  }
-
-  if (fields.length === 0) {
-    const existing = await getProspectById(id);
-    if (!existing) throw new Error(`Prospect ${id} not found`);
-    return existing;
-  }
-
-  fields.push('updated_at = NOW()');
-
-  const query = `
-    UPDATE public.prospects
-    SET ${fields.join(', ')}
-    WHERE id = $1
-    RETURNING *
-  `;
-
-  const res = await dbQuery<ProspectRecord>(query, params);
-  const updated = res.rows[0];
-
-  await logActivity({
-    action: 'prospect.updated',
-    entityType: 'prospect',
-    entityId: id,
-    entityTitle: updated.company,
-    metadata: {
-      updatedFields: Object.keys(data),
-      stage: updated.stage,
-      estimatedValue: updated.estimated_deal_value,
-    },
-  });
-
-  return updated;
-}
-
-export async function updateProspectStage(id: string, stage: ProspectStage): Promise<ProspectRecord> {
-  const res = await dbQuery<ProspectRecord>(
-    `UPDATE public.prospects
-     SET stage = $2, updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
-    [id, stage]
-  );
-
-  const updated = res.rows[0];
-  if (!updated) throw new Error(`Prospect ${id} not found`);
-
-  await logActivity({
-    action: 'prospect.stage_changed',
-    entityType: 'prospect',
-    entityId: id,
-    entityTitle: updated.company,
-    metadata: { newStage: stage },
-  });
-
-  return updated;
-}
-
-export async function deleteProspect(id: string): Promise<boolean> {
-  const existing = await getProspectById(id);
-  const res = await dbQuery(`DELETE FROM public.prospects WHERE id = $1`, [id]);
-
-  if (existing) {
-    await logActivity({
-      action: 'prospect.deleted',
-      entityType: 'prospect',
-      entityId: id,
-      entityTitle: existing.company,
-      metadata: { contactPerson: existing.contact_person, value: existing.estimated_deal_value },
-    });
-  }
-
-  return (res.rowCount ?? 0) > 0;
+  return client;
 }
 
 // ============================================================================

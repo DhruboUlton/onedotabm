@@ -8,9 +8,9 @@ import {
   updateLead,
   updateLeadStatus,
   deleteLead,
-  convertLeadToProspect,
+  convertLeadToClient,
 } from '@/lib/services/crmService';
-import { LeadRecord, LeadStatus, Priority, ProspectRecord } from '@/types/database';
+import { LeadRecord, LeadStatus, Priority } from '@/types/database';
 
 export interface ActionResponse<T = any> {
   success: boolean;
@@ -113,21 +113,18 @@ export async function deleteLeadAction(id: string): Promise<ActionResponse<boole
   }
 }
 
-export async function convertLeadAction(
-  leadId: string,
-  dealData: Partial<ProspectRecord> = {}
-): Promise<ActionResponse<ProspectRecord>> {
+export async function convertLeadAction(leadId: string): Promise<ActionResponse<{ id: string }>> {
   const admin = await getCurrentAdmin();
   if (!admin) return { success: false, error: 'Unauthorized' };
 
   try {
-    const prospect = await convertLeadToProspect(leadId, dealData);
+    const client = await convertLeadToClient(leadId);
     revalidatePath('/admin/leads');
     revalidatePath(`/admin/leads/${leadId}`);
-    revalidatePath('/admin/prospects');
-    return { success: true, data: prospect };
+    revalidatePath('/admin/clients');
+    return { success: true, data: { id: client.id } };
   } catch (error: any) {
-    console.error('Error converting lead to prospect:', error);
-    return { success: false, error: error.message || 'Failed to convert lead to prospect' };
+    console.error('Error converting lead to client:', error);
+    return { success: false, error: error.message || 'Failed to convert lead to client' };
   }
 }

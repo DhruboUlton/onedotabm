@@ -55,8 +55,6 @@ export function LeadDetailClientView({ lead: initialLead }: LeadDetailClientView
   );
   const [isPending, startTransition] = useTransition();
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
-  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
-  const [convertError, setConvertError] = useState<string | null>(null);
 
   const handleStatusChange = (status: LeadStatus) => {
     startTransition(async () => {
@@ -108,31 +106,12 @@ export function LeadDetailClientView({ lead: initialLead }: LeadDetailClientView
     });
   };
 
-  const handleConvertLead = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setConvertError(null);
-    const formData = new FormData(e.currentTarget);
-
-    const dealData = {
-      company: (formData.get('company') as string) || lead.company || lead.name,
-      contact_person: (formData.get('contact_person') as string) || lead.name,
-      email: (formData.get('email') as string) || lead.email,
-      phone: (formData.get('phone') as string) || lead.phone || undefined,
-      estimated_deal_value: parseFloat((formData.get('estimated_deal_value') as string) || '0') || 0,
-      currency: (formData.get('currency') as string) || 'BDT',
-      probability: parseInt((formData.get('probability') as string) || '60', 10) || 60,
-      stage: (formData.get('stage') as any) || 'qualified',
-      expected_close_date: (formData.get('expected_close_date') as string) || undefined,
-      notes: (formData.get('notes') as string) || `Converted from Lead ${lead.name}`,
-    };
-
+  const handleConvertLead = () => {
+    if (!confirm(`Convert ${lead.name} into a client? The lead will be marked won.`)) return;
     startTransition(async () => {
-      const res = await convertLeadAction(lead.id, dealData);
-      if (res.success) {
-        router.push('/admin/prospects');
-      } else {
-        setConvertError(res.error || 'Failed to convert lead');
-      }
+      const res = await convertLeadAction(lead.id);
+      if (res.success && res.data) router.push(`/admin/clients/${res.data.id}`);
+      else alert(res.error || 'Failed to convert lead');
     });
   };
 
@@ -171,11 +150,11 @@ export function LeadDetailClientView({ lead: initialLead }: LeadDetailClientView
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsConvertModalOpen(true)}
+            onClick={handleConvertLead}
             className="px-4 py-2 rounded-lg bg-[#1400FF] text-white text-xs font-semibold hover:bg-[#1000CC] transition-colors flex items-center gap-1.5 shadow-sm"
           >
             <TrendingUp className="w-4 h-4" />
-            <span>Convert to Prospect</span>
+            <span>Convert to Client</span>
           </button>
           <button
             onClick={handleDelete}
@@ -454,149 +433,6 @@ export function LeadDetailClientView({ lead: initialLead }: LeadDetailClientView
         </div>
       </div>
 
-      {/* Convert to Prospect Modal */}
-      {isConvertModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl border border-[#E5E5E2] w-full max-w-lg shadow-2xl">
-            <div className="p-6 border-b border-[#E5E5E2] flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-[#111111]">Convert to Deal Prospect</h3>
-                <p className="text-xs text-gray-500">Promote into the sales pipeline.</p>
-              </div>
-              <button
-                onClick={() => setIsConvertModalOpen(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-black"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConvertLead} className="p-6 space-y-4">
-              {convertError && (
-                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
-                  {convertError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Company *</label>
-                  <input
-                    type="text"
-                    name="company"
-                    defaultValue={lead.company || lead.name}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Contact Person *</label>
-                  <input
-                    type="text"
-                    name="contact_person"
-                    defaultValue={lead.name}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    defaultValue={lead.email}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    defaultValue={lead.phone || ''}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">
-                    Estimated Deal Value *
-                  </label>
-                  <input
-                    type="number"
-                    name="estimated_deal_value"
-                    defaultValue={parseFloat(lead.budget?.replace(/[^0-9.]/g, '') || '0') || 250000}
-                    step="1000"
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Currency</label>
-                  <select
-                    name="currency"
-                    defaultValue="BDT"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white"
-                  >
-                    <option value="BDT">BDT (৳)</option>
-                    <option value="USD">USD ($)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Stage</label>
-                  <select
-                    name="stage"
-                    defaultValue="qualified"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white"
-                  >
-                    <option value="qualified">Qualified</option>
-                    <option value="discovery">Discovery</option>
-                    <option value="proposal">Proposal</option>
-                    <option value="negotiation">Negotiation</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Probability (%)</label>
-                  <input
-                    type="number"
-                    name="probability"
-                    defaultValue={65}
-                    min={0}
-                    max={100}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2]"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[#E5E5E2] flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsConvertModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-[#E5E5E2] text-xs text-gray-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="px-5 py-2 rounded-lg bg-[#1400FF] text-white text-xs font-semibold"
-                >
-                  Confirm Conversion
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

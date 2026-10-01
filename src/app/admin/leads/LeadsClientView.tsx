@@ -31,6 +31,7 @@ import {
   Loader2,
   ExternalLink,
   ChevronDown,
+  Download,
 } from 'lucide-react';
 
 interface LeadsClientViewProps {
@@ -56,7 +57,6 @@ export function LeadsClientView({ initialLeads }: LeadsClientViewProps) {
 
   // Local state for modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [convertModalLead, setConvertModalLead] = useState<LeadRecord | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [localSearch, setLocalSearch] = useState(currentSearch);
   const [formError, setFormError] = useState<string | null>(null);
@@ -144,34 +144,31 @@ export function LeadsClientView({ initialLeads }: LeadsClientViewProps) {
     });
   };
 
-  const handleConvertLead = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!convertModalLead) return;
-    setFormError(null);
-    const formData = new FormData(e.currentTarget);
-
-    const dealData = {
-      company: (formData.get('company') as string) || convertModalLead.company || convertModalLead.name,
-      contact_person: (formData.get('contact_person') as string) || convertModalLead.name,
-      email: (formData.get('email') as string) || convertModalLead.email,
-      phone: (formData.get('phone') as string) || convertModalLead.phone || undefined,
-      estimated_deal_value: parseFloat((formData.get('estimated_deal_value') as string) || '0') || 0,
-      currency: (formData.get('currency') as string) || 'BDT',
-      probability: parseInt((formData.get('probability') as string) || '60', 10) || 60,
-      stage: (formData.get('stage') as any) || 'qualified',
-      expected_close_date: (formData.get('expected_close_date') as string) || undefined,
-      notes: (formData.get('notes') as string) || `Converted from Lead ${convertModalLead.name}`,
-    };
-
+  const handleConvertLead = (lead: LeadRecord) => {
+    if (!confirm(`Convert ${lead.name} into a client? The lead will be marked won.`)) return;
     startTransition(async () => {
-      const res = await convertLeadAction(convertModalLead.id, dealData);
-      if (res.success) {
-        setConvertModalLead(null);
-        router.push('/admin/prospects');
-      } else {
-        setFormError(res.error || 'Failed to convert lead');
-      }
+      const res = await convertLeadAction(lead.id);
+      if (res.success && res.data) router.push(`/admin/clients/${res.data.id}`);
+      else alert(res.error || 'Failed to convert lead');
     });
+  };
+
+  const exportCsv = () => {
+    const rows = [
+      ['Name', 'Email', 'Phone', 'Company', 'Service', 'Budget', 'Status', 'Date', 'Message'],
+      ...filteredLeads.map((l) => [
+        l.name, l.email, l.phone ?? '', l.company ?? '', l.service_interested ?? '', l.budget ?? '',
+        l.status, new Date(l.created_at).toLocaleDateString(), (l.message ?? '').replace(/\n/g, ' '),
+      ]),
+    ];
+    // A quote inside a field is doubled, or the row splits in Excel.
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const getPriorityBadge = (priority: Priority) => {
@@ -218,6 +215,14 @@ export function LeadsClientView({ initialLeads }: LeadsClientViewProps) {
             Capture, qualify, and convert marketing inquiries into revenue opportunities.
           </p>
         </div>
+        <div className="flex items-center gap-2">
+        <button
+          onClick={exportCsv}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#E5E5E2] bg-white text-sm font-medium text-[#111111] hover:bg-[#F0F0ED] transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          <span>Export CSV</span>
+        </button>
         <button
           onClick={() => {
             setFormError(null);
@@ -228,6 +233,7 @@ export function LeadsClientView({ initialLeads }: LeadsClientViewProps) {
           <Plus className="w-4 h-4" />
           <span>Add New Lead</span>
         </button>
+        </div>
       </div>
 
       {/* Metric Cards */}
@@ -400,6 +406,14 @@ export function LeadsClientView({ initialLeads }: LeadsClientViewProps) {
                             <a href={`tel:${lead.phone}`} className="hover:text-[#1400FF]">
                               {lead.phone}
                             </a>
+                            <a
+                              href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-emerald-600 font-medium hover:underline"
+                            >
+                              WhatsApp
+                            </a>
                           </span>
                         )}
                       </div>
@@ -456,12 +470,9 @@ export function LeadsClientView({ initialLeads }: LeadsClientViewProps) {
                           View
                         </Link>
                         <button
-                          onClick={() => {
-                            setFormError(null);
-                            setConvertModalLead(lead);
-                          }}
+                          onClick={() => handleConvertLead(lead)}
                           className="px-2 py-1 rounded bg-[#1400FF]/10 hover:bg-[#1400FF]/20 text-[#1400FF] text-xs font-medium transition-colors flex items-center gap-1"
-                          title="Convert to Prospect Deal"
+                          title="Convert to Client"
                         >
                           <TrendingUp className="w-3 h-3" />
                           <span>Convert</span>
@@ -695,172 +706,6 @@ export function LeadsClientView({ initialLeads }: LeadsClientViewProps) {
                 >
                   {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>Save Lead</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Convert to Prospect Modal */}
-      {convertModalLead && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl border border-[#E5E5E2] w-full max-w-lg overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-[#E5E5E2] flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-[#1400FF]" />
-                  <h3 className="text-lg font-bold text-[#111111]">Convert to Deal Pipeline</h3>
-                </div>
-                <p className="text-xs text-[#555555] mt-1">
-                  Promote &quot;{convertModalLead.name}&quot; into an active sales prospect.
-                </p>
-              </div>
-              <button
-                onClick={() => setConvertModalLead(null)}
-                className="p-1 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConvertLead} className="p-6 space-y-4">
-              {formError && (
-                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
-                  {formError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Company *</label>
-                  <input
-                    type="text"
-                    name="company"
-                    defaultValue={convertModalLead.company || convertModalLead.name}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Contact Person *</label>
-                  <input
-                    type="text"
-                    name="contact_person"
-                    defaultValue={convertModalLead.name}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    defaultValue={convertModalLead.email}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    defaultValue={convertModalLead.phone || ''}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">
-                    Estimated Deal Value *
-                  </label>
-                  <input
-                    type="number"
-                    name="estimated_deal_value"
-                    defaultValue={
-                      parseFloat(convertModalLead.budget?.replace(/[^0-9.]/g, '') || '0') || 250000
-                    }
-                    step="1000"
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Currency</label>
-                  <select
-                    name="currency"
-                    defaultValue="BDT"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white focus:outline-none focus:border-[#1400FF]"
-                  >
-                    <option value="BDT">BDT (৳)</option>
-                    <option value="USD">USD ($)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Pipeline Stage</label>
-                  <select
-                    name="stage"
-                    defaultValue="qualified"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] bg-white focus:outline-none focus:border-[#1400FF]"
-                  >
-                    <option value="qualified">Qualified</option>
-                    <option value="discovery">Discovery</option>
-                    <option value="proposal">Proposal</option>
-                    <option value="negotiation">Negotiation</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111111] mb-1">Probability (%)</label>
-                  <input
-                    type="number"
-                    name="probability"
-                    defaultValue={60}
-                    min={0}
-                    max={100}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#111111] mb-1">
-                  Expected Close Date
-                </label>
-                <input
-                  type="date"
-                  name="expected_close_date"
-                  defaultValue={
-                    new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                  }
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E2] focus:outline-none focus:border-[#1400FF]"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-[#E5E5E2] flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setConvertModalLead(null)}
-                  className="px-4 py-2 rounded-lg border border-[#E5E5E2] text-xs font-medium text-[#555555] hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="px-5 py-2 rounded-lg bg-[#1400FF] text-white text-xs font-medium hover:bg-[#1000CC] transition-colors flex items-center gap-1.5"
-                >
-                  {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Confirm Conversion</span>
                 </button>
               </div>
             </form>

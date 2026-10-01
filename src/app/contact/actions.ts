@@ -6,6 +6,9 @@
 
 import { createLead } from '@/lib/services/crmService';
 import { logActivity } from '@/lib/services/activityService';
+import { getCompanySettings } from '@/lib/services/systemService';
+import { rateLimit } from '@/lib/rateLimit';
+import { sendEmail, esc } from '@/lib/email';
 
 export interface SubmitInquiryInput {
   name: string;
@@ -30,6 +33,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export async function submitProjectInquiryAction(
   input: SubmitInquiryInput
 ): Promise<SubmitInquiryResult> {
+  if (!(await rateLimit('inquiry', 10, 3600))) {
+    return { success: false, error: 'Too many submissions. Please try again later.' };
+  }
+
   const name = input.name?.trim();
   const businessName = input.businessName?.trim();
   const email = input.email?.trim();
@@ -67,6 +74,24 @@ export async function submitProjectInquiryAction(
       entityTitle: `New inquiry from ${name} (${businessName})`,
       metadata: { source: 'contact-form', email, serviceInterest: input.serviceInterest },
     });
+
+    // Best effort: the lead is already saved, so a failed email changes nothing for the visitor.
+    try {
+      const settings = await getCompanySettings();
+      if (settings.notify_on_lead && settings.notify_email) {
+        await sendEmail({
+          to: settings.notify_email,
+          subject: `New Lead: ${name.slice(0, 100)} — ${(input.serviceInterest || 'General inquiry').slice(0, 100)}`,
+          html: `<h2>New inquiry — OneDot ABM</h2>
+            <p><b>Name:</b> ${esc(name)}</p><p><b>Email:</b> ${esc(email)}</p>
+            <p><b>Phone:</b> ${esc(phone)}</p><p><b>Business:</b> ${esc(businessName)}</p>
+            <p><b>Service:</b> ${esc(input.serviceInterest) || '—'}</p><p><b>Budget:</b> ${esc(input.budgetRange) || '—'}</p>
+            <p><b>Timeline:</b> ${esc(input.timeline) || '—'}</p><p><b>Message:</b> ${esc(description)}</p>`,
+        });
+      }
+    } catch (e) {
+      console.error('Lead notification failed:', e);
+    }
 
     return { success: true };
   } catch (error) {
