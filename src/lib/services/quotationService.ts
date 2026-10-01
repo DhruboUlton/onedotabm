@@ -42,6 +42,9 @@ export interface QuotationDetail extends QuotationSummary {
   discount_note: string;
   tax_rate: number;
   tax_label: string;
+  /** 'per_item': qty x unit price per line. 'single': one lump-sum price for the scope. */
+  pricing_mode: 'per_item' | 'single';
+  lump_sum: number;
   scope_overview: string;
   project_timeline: string;
   payment_terms: string;
@@ -69,6 +72,8 @@ export interface QuotationInput {
   discount_note: string;
   tax_rate: number;
   tax_label: string;
+  pricing_mode: 'per_item' | 'single';
+  lump_sum: number;
   scope_overview: string;
   project_timeline: string;
   payment_terms: string;
@@ -130,9 +135,12 @@ export async function saveQuotation(id: string | null, input: QuotationInput, ac
       description: it.description.trim() || 'Item',
       deliverables: it.deliverables.trim(),
       quantity: Math.max(0.01, NUM(it.quantity) || 1),
-      unit_price: NUM(it.unit_price),
+      unit_price: input.pricing_mode === 'single' ? 0 : NUM(it.unit_price),
     }));
-  const t = computeTotals(items, input.discount_type, input.discount_value, input.tax_rate);
+  const lump = input.pricing_mode === 'single' ? NUM(input.lump_sum) : 0;
+  const t = computeTotals(
+    input.pricing_mode === 'single' ? [{ quantity: 1, unit_price: lump }] : items,
+    input.discount_type, input.discount_value, input.tax_rate);
 
   const savedId = await dbTransaction(async (client) => {
     const v = [
@@ -141,6 +149,7 @@ export async function saveQuotation(id: string | null, input: QuotationInput, ac
       t.subtotal, t.discountAmount, t.taxAmount, t.total,
       input.discount_type, input.discount_value, input.discount_note, input.tax_rate, input.tax_label,
       input.scope_overview, input.project_timeline, input.payment_terms, input.terms, input.notes,
+      input.pricing_mode, lump,
     ];
     let qid = id;
     if (qid) {
@@ -149,8 +158,8 @@ export async function saveQuotation(id: string | null, input: QuotationInput, ac
            title=$6, status=$7::text::quotation_status_enum, issue_date=$8, expiry_date=$9, currency=$10,
            subtotal=$11, discount=$12, tax=$13, total=$14,
            discount_type=$15, discount_value=$16, discount_note=$17, tax_rate=$18, tax_label=$19,
-           scope_overview=$20, project_timeline=$21, payment_terms=$22, terms=$23, notes=$24, updated_at=NOW()
-         WHERE id=$25 RETURNING id`,
+           scope_overview=$20, project_timeline=$21, payment_terms=$22, terms=$23, notes=$24, pricing_mode=$25, lump_sum=$26, updated_at=NOW()
+         WHERE id=$27 RETURNING id`,
         [...v, qid]
       );
       if (!res.rows[0]) throw new Error('Quotation not found');
@@ -163,8 +172,8 @@ export async function saveQuotation(id: string | null, input: QuotationInput, ac
           `INSERT INTO public.quotations (client_id, business_id, client_company, client_address, project_id,
              title, status, issue_date, expiry_date, currency, subtotal, discount, tax, total,
              discount_type, discount_value, discount_note, tax_rate, tax_label,
-             scope_overview, project_timeline, payment_terms, terms, notes, quotation_number)
-           VALUES ($1,$2,$3,$4,$5,$6,$7::text::quotation_status_enum,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
+             scope_overview, project_timeline, payment_terms, terms, notes, pricing_mode, lump_sum, quotation_number)
+           VALUES ($1,$2,$3,$4,$5,$6,$7::text::quotation_status_enum,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
            ON CONFLICT (quotation_number) DO NOTHING RETURNING id`,
           [...v, generateDocumentNumber(prefix)]
         );
@@ -219,10 +228,21 @@ export async function convertToInvoice(id: string): Promise<{ id: string; invoic
     }
     if (!invoice) throw new Error('Could not generate a unique invoice number');
 
-    for (const [position, it] of items.rows.entries()) {
+    // A lump-sum quotation becomes one invoice line carrying the whole price.
+    const lines =
+      quote.pricing_mode === 'single'
+        ? [{
+            description: [quote.title, ...items.rows.map((it) => `- ${it.description}`)].join('\n'),
+            quantity: 1, unit_price: quote.lump_sum, total: quote.lump_sum,
+          }]
+        : items.rows.map((it) => ({
+            description: it.deliverables ? `${it.description}\nScope: ${it.deliverables}` : it.description,
+            quantity: it.quantity, unit_price: it.unit_price, total: it.total,
+          }));
+    for (const [position, it] of lines.entries()) {
       await client.query(
         `INSERT INTO public.invoice_items (invoice_id, description, quantity, unit_price, total, position) VALUES ($1,$2,$3,$4,$5,$6)`,
-        [invoice.id, it.deliverables ? `${it.description}\nScope: ${it.deliverables}` : it.description, it.quantity, it.unit_price, it.total, position]
+        [invoice.id, it.description, it.quantity, it.unit_price, it.total, position]
       );
     }
     await client.query(`UPDATE public.quotations SET status = 'converted', converted_invoice_id = $2, updated_at = NOW() WHERE id = $1`, [id, invoice.id]);

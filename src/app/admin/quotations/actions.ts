@@ -43,6 +43,8 @@ function clean(i: QuotationInput): QuotationInput {
     discount_note: str(i.discount_note).trim(),
     tax_rate: Math.min(100, num(i.tax_rate)),
     tax_label: str(i.tax_label).trim() || 'Tax',
+    pricing_mode: i.pricing_mode === 'single' ? 'single' : 'per_item',
+    lump_sum: num(i.lump_sum),
     scope_overview: str(i.scope_overview).trim(),
     project_timeline: str(i.project_timeline).trim(),
     payment_terms: str(i.payment_terms).trim(),

@@ -290,6 +290,7 @@ function ProjectPdf({ project, invoice, company, logo }: { project: ProjectDetai
 
 function QuotationPdf({ quotation: q, company, logo }: { quotation: QuotationDetail; company: CompanySettingsRecord; logo: Buffer | null }) {
   const cur = q.currency || 'BDT';
+  const single = q.pricing_mode === 'single';
   return (
     <Document title={`Quotation ${q.quotation_number}`} author={company.company_name}>
       <Page size="A4" style={s.page}>
@@ -315,9 +316,9 @@ function QuotationPdf({ quotation: q, company, logo }: { quotation: QuotationDet
 
         <View style={s.th}>
           <Text style={[s.thText, s.cDesc]}>Scope</Text>
-          <Text style={[s.thText, s.cQty]}>Qty</Text>
-          <Text style={[s.thText, s.cUnit]}>Unit price</Text>
-          <Text style={[s.thText, s.cAmt]}>Amount</Text>
+          {!single && <Text style={[s.thText, s.cQty]}>Qty</Text>}
+          {!single && <Text style={[s.thText, s.cUnit]}>Unit price</Text>}
+          {!single && <Text style={[s.thText, s.cAmt]}>Amount</Text>}
         </View>
         {q.items.map((it, i) => (
           <View key={i} style={s.tr} wrap={false}>
@@ -325,9 +326,9 @@ function QuotationPdf({ quotation: q, company, logo }: { quotation: QuotationDet
               <Text style={s.bold}>{it.description}</Text>
               {it.deliverables ? <Text style={[s.body, { marginTop: 2 }]}>{it.deliverables}</Text> : null}
             </View>
-            <Text style={s.cQty}>{it.quantity}</Text>
-            <Text style={s.cUnit}>{formatMoney(it.unit_price, cur)}</Text>
-            <Text style={s.cAmt}>{formatMoney(it.total ?? it.quantity * it.unit_price, cur)}</Text>
+            {!single && <Text style={s.cQty}>{it.quantity}</Text>}
+            {!single && <Text style={s.cUnit}>{formatMoney(it.unit_price, cur)}</Text>}
+            {!single && <Text style={s.cAmt}>{formatMoney(it.total ?? it.quantity * it.unit_price, cur)}</Text>}
           </View>
         ))}
         <View style={{ marginTop: 6 }} wrap={false}>

@@ -19,6 +19,7 @@ function Block({ title, children }: { title: string; children: string }) {
 
 export function QuotationDocument({ quotation: q, company }: { quotation: QuotationDetail; company: CompanySettingsRecord }) {
   const cur = q.currency || 'BDT';
+  const single = q.pricing_mode === 'single';
   const status = quotationStatusMeta(q.status);
   return (
     <div data-print-document className="bg-white border border-[#E5E5E2] shadow-sm overflow-hidden rounded-2xl">
@@ -85,22 +86,30 @@ export function QuotationDocument({ quotation: q, company }: { quotation: Quotat
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="text-[10px] uppercase tracking-[0.15em] text-[#858585]">
-                <th className="pb-4 font-semibold">Scope</th>
-                <th className="pb-4 font-semibold text-right w-16">Qty</th>
-                <th className="pb-4 font-semibold text-right w-32">Unit price</th>
-                <th className="pb-4 font-semibold text-right w-32">Amount</th>
+                <th colSpan={single ? 4 : 1} className="pb-4 font-semibold">Scope</th>
+                {!single && (
+                  <>
+                    <th className="pb-4 font-semibold text-right w-16">Qty</th>
+                    <th className="pb-4 font-semibold text-right w-32">Unit price</th>
+                    <th className="pb-4 font-semibold text-right w-32">Amount</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
               {q.items.map((it, i) => (
                 <tr key={it.id || i} className="border-t border-[#F0F0ED]">
-                  <td className="py-3.5 pr-3 align-top">
+                  <td colSpan={single ? 4 : 1} className="py-3.5 pr-3 align-top">
                     <div className="font-semibold text-[#111111]">{it.description}</div>
                     {it.deliverables && <div className="mt-1 text-[#555555] whitespace-pre-line leading-relaxed">{it.deliverables}</div>}
                   </td>
-                  <td className="py-3.5 text-right text-[#555555] tabular-nums align-top">{it.quantity}</td>
-                  <td className="py-3.5 text-right text-[#555555] tabular-nums align-top">{formatMoney(it.unit_price, cur)}</td>
-                  <td className="py-3.5 text-right text-[#111111] tabular-nums align-top">{formatMoney(it.total ?? it.quantity * it.unit_price, cur)}</td>
+                  {!single && (
+                    <>
+                      <td className="py-3.5 text-right text-[#555555] tabular-nums align-top">{it.quantity}</td>
+                      <td className="py-3.5 text-right text-[#555555] tabular-nums align-top">{formatMoney(it.unit_price, cur)}</td>
+                      <td className="py-3.5 text-right text-[#111111] tabular-nums align-top">{formatMoney(it.total ?? it.quantity * it.unit_price, cur)}</td>
+                    </>
+                  )}
                 </tr>
               ))}
               <tr className="border-t border-[#E5E5E2]">

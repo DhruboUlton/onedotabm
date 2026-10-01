@@ -101,6 +101,8 @@ export function QuotationEditor({
   const [discountNote, setDiscountNote] = useState(quotation?.discount_note ?? '');
   const [taxRate, setTaxRate] = useState(String(quotation?.tax_rate ?? defaultTaxRate));
   const [taxLabel, setTaxLabel] = useState(quotation?.tax_label ?? 'Tax');
+  const [pricingMode, setPricingMode] = useState<'per_item' | 'single'>(quotation?.pricing_mode ?? 'per_item');
+  const [lumpSum, setLumpSum] = useState(String(quotation?.lump_sum ?? 0));
   const [items, setItems] = useState<FormItem[]>(
     quotation?.items.length
       ? quotation.items.map((i) => ({
@@ -117,7 +119,9 @@ export function QuotationEditor({
   const [importing, setImporting] = useState(false);
 
   const { subtotal, discountAmount, taxAmount, total } = computeTotals(
-    items.map((i) => ({ quantity: parseFloat(i.quantity) || 0, unit_price: parseFloat(i.unit_price) || 0 })),
+    pricingMode === 'single'
+      ? [{ quantity: 1, unit_price: parseFloat(lumpSum) || 0 }]
+      : items.map((i) => ({ quantity: parseFloat(i.quantity) || 0, unit_price: parseFloat(i.unit_price) || 0 })),
     discountType,
     parseFloat(discountValue) || 0,
     parseFloat(taxRate) || 0
@@ -187,6 +191,8 @@ export function QuotationEditor({
       discount_note: discountNote,
       tax_rate: parseFloat(taxRate) || 0,
       tax_label: taxLabel,
+      pricing_mode: pricingMode,
+      lump_sum: parseFloat(lumpSum) || 0,
       scope_overview: scope,
       project_timeline: timeline,
       payment_terms: paymentTerms,
@@ -368,6 +374,23 @@ export function QuotationEditor({
           </Section>
 
           <Section title="Scope & Pricing">
+            <div className="inline-flex rounded-lg border border-[#E5E5E2] p-0.5 mb-4 bg-[#F7F7F5]">
+              {([['per_item', 'Price per service'], ['single', 'Single total price']] as const).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => {
+                    if (mode === 'single' && !(parseFloat(lumpSum) > 0)) setLumpSum(String(subtotal));
+                    setPricingMode(mode);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md ${
+                    pricingMode === mode ? 'bg-white text-[#1400FF] shadow-xs' : 'text-[#555555] hover:text-[#111111]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div className="flex items-center gap-2 flex-wrap mb-4">
               <span className="text-[11px] text-[#858585] flex items-center gap-1">
                 <Sparkles className="w-3 h-3" /> Presets:
@@ -416,6 +439,7 @@ export function QuotationEditor({
                       className={textareaCls}
                       placeholder="Deliverables and specifications included in this item…"
                     />
+                    {pricingMode === 'per_item' && (
                     <div className="grid grid-cols-3 gap-2 items-end">
                       <Field label="Qty">
                         <input type="number" min="0" step="any" value={item.quantity} onChange={(e) => updateItem(idx, { quantity: e.target.value })} className={inputCls} />
@@ -425,6 +449,7 @@ export function QuotationEditor({
                       </Field>
                       <p className="text-sm font-bold font-mono text-[#111111] text-right pb-2">{formatMoney(amount, currency)}</p>
                     </div>
+                    )}
                   </div>
                 );
               })}
@@ -435,6 +460,13 @@ export function QuotationEditor({
             >
               <Plus className="w-3.5 h-3.5" /> Add Item
             </button>
+            {pricingMode === 'single' && (
+              <div className="mt-4 rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] p-3 max-w-xs">
+                <Field label={`Total price (${currency})`}>
+                  <input type="number" min="0" step="any" value={lumpSum} onChange={(e) => setLumpSum(e.target.value)} className={inputCls} />
+                </Field>
+              </div>
+            )}
           </Section>
 
           <Section title="Timeline & Terms">
