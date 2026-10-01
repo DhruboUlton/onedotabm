@@ -289,13 +289,14 @@ export function BlogClientView({ initialPosts, authors }: BlogClientViewProps) {
                 <th className="px-6 py-3.5">Tags</th>
                 <th className="px-6 py-3.5">Status</th>
                 <th className="px-6 py-3.5">Published Date</th>
+                <th className="px-6 py-3.5">Views</th>
                 <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5E2]">
               {filteredPosts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-[#858585]">
+                  <td colSpan={7} className="px-6 py-12 text-center text-[#858585]">
                     No blog posts found.
                   </td>
                 </tr>
@@ -349,6 +350,8 @@ export function BlogClientView({ initialPosts, authors }: BlogClientViewProps) {
                     <td className="px-6 py-4 text-xs font-mono text-[#555555]">
                       {post.published_at ? post.published_at.split('T')[0] : 'Unpublished'}
                     </td>
+
+                    <td className="px-6 py-4 text-xs font-mono text-[#555555]">{(post.views ?? 0).toLocaleString()}</td>
 
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

@@ -255,6 +255,8 @@ export interface BlogPostRecord {
   canonical_url?: string | null;
   published_at?: string | null;
   status: ContentStatus;
+  /** Public page views, counted from page_views. Only on list queries. */
+  views?: number;
   created_at: string;
   updated_at: string;
 }

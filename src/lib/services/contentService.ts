@@ -588,6 +588,7 @@ export async function getBlogPostsDb(filter?: {
        b.status,
        b.created_at::text,
        b.updated_at::text,
+       (SELECT COUNT(*) FROM public.page_views v WHERE v.path = '/blog/' || b.slug)::int AS views,
        p.full_name AS author_name
      FROM public.blog_posts b
      LEFT JOIN public.profiles p ON p.id = b.author_id
