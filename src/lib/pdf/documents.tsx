@@ -70,7 +70,6 @@ function Header({ company, logo, title, number, status }: { company: CompanySett
         </View>
         {company.tagline ? <Text style={s.small}>{company.tagline}</Text> : null}
         {company.email ? <Text style={s.small}>{company.email}</Text> : null}
-        {company.phone ? <Text style={s.small}>{company.phone}</Text> : null}
         {company.address ? <Text style={s.small}>{company.address}</Text> : null}
       </View>
       <View>

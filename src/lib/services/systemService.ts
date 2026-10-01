@@ -272,9 +272,9 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
 export const DEFAULT_SETTINGS: CompanySettingsRecord = {
   company_name: 'OneDot ABM',
   tagline: 'Strategic Marketing & Custom Web Development',
-  email: 'hello@onedotabm.com',
-  phone: '+880 1700-000000',
-  address: 'Gulshan-2, Dhaka 1212, Bangladesh',
+  email: 'billing@onedotabm.com',
+  phone: '',
+  address: '2397 Connecticut River Rd, Springfield, Vermont, 05156',
   website: 'https://onedotabm.com',
   default_currency: 'BDT',
   tax_rate: 0.00,

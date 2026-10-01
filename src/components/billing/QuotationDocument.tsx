@@ -34,7 +34,6 @@ export function QuotationDocument({ quotation: q, company }: { quotation: Quotat
             <div className="mt-2 text-[11px] leading-relaxed text-[#555555]">
               {company.tagline && <div className="text-[#111111]">{company.tagline}</div>}
               {company.email && <div>{company.email}</div>}
-              {company.phone && <div>{company.phone}</div>}
               {company.address && <div>{company.address}</div>}
             </div>
           </div>
