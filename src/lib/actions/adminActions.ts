@@ -1,6 +1,7 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { adminAction } from '@/lib/actions/guard';
+import { isUuid } from '@/lib/db';
 import {
   toggleIntegration,
   updateIntegrationConfig,
@@ -9,39 +10,39 @@ import {
   deleteTeamMember,
   updateCompanySettings,
 } from '@/lib/services/systemService';
-import { QuotationStatus, InvoiceStatus, UserRole, CompanySettingsRecord } from '@/types/database';
+import { UserRole, CompanySettingsRecord } from '@/types/database';
 
-// ============================================================================
-// FINANCE SERVER ACTIONS
-// ============================================================================
+// Every action here runs behind adminAction, so an anonymous POST is refused.
+// Managing the team, the company settings and integrations is further limited
+// to owners and admins: a manager or editor must not be able to make
+// themselves an owner.
+
+function ownerOnly(admin: { role: UserRole }) {
+  if (admin.role !== 'owner' && admin.role !== 'admin') throw new Error('Only an owner or admin can do this.');
+}
+
+const ROLES: UserRole[] = ['owner', 'admin', 'manager', 'marketing', 'developer', 'finance', 'editor'];
+
+function checkRole(role: unknown) {
+  if (role !== undefined && !ROLES.includes(role as UserRole)) throw new Error('Invalid role');
+}
 
 export async function toggleIntegrationAction(
   provider: string,
   status: 'connected' | 'disconnected' | 'error',
   config?: Record<string, unknown>
 ) {
-  try {
-    const integration = await toggleIntegration(provider, status, config);
-    revalidatePath('/admin/integrations');
-    return { success: true, data: integration };
-  } catch (error: any) {
-    console.error('toggleIntegrationAction error:', error);
-    return { success: false, error: error.message || 'Failed to update integration' };
-  }
+  return adminAction(async (admin) => {
+    ownerOnly(admin);
+    return toggleIntegration(provider, status, config);
+  }, ['/admin/integrations']);
 }
 
-export async function updateIntegrationConfigAction(
-  provider: string,
-  config: Record<string, unknown>
-) {
-  try {
-    const integration = await updateIntegrationConfig(provider, config);
-    revalidatePath('/admin/integrations');
-    return { success: true, data: integration };
-  } catch (error: any) {
-    console.error('updateIntegrationConfigAction error:', error);
-    return { success: false, error: error.message || 'Failed to save configuration' };
-  }
+export async function updateIntegrationConfigAction(provider: string, config: Record<string, unknown>) {
+  return adminAction(async (admin) => {
+    ownerOnly(admin);
+    return updateIntegrationConfig(provider, config);
+  }, ['/admin/integrations']);
 }
 
 export async function createTeamMemberAction(data: {
@@ -52,14 +53,13 @@ export async function createTeamMemberAction(data: {
   active?: boolean;
   password?: string;
 }) {
-  try {
-    const member = await createTeamMember(data);
-    revalidatePath('/admin/team');
-    return { success: true, data: member };
-  } catch (error: any) {
-    console.error('createTeamMemberAction error:', error);
-    return { success: false, error: error.message || 'Failed to create team member' };
-  }
+  return adminAction(async (admin) => {
+    ownerOnly(admin);
+    checkRole(data.role);
+    // Only an owner can mint another owner.
+    if (data.role === 'owner' && admin.role !== 'owner') throw new Error('Only an owner can create an owner.');
+    return createTeamMember(data);
+  }, ['/admin/team']);
 }
 
 export async function updateTeamMemberAction(
@@ -74,35 +74,27 @@ export async function updateTeamMemberAction(
     password?: string;
   }
 ) {
-  try {
-    const member = await updateTeamMember(id, data);
-    revalidatePath('/admin/team');
-    return { success: true, data: member };
-  } catch (error: any) {
-    console.error('updateTeamMemberAction error:', error);
-    return { success: false, error: error.message || 'Failed to update team member' };
-  }
+  return adminAction(async (admin) => {
+    ownerOnly(admin);
+    if (!isUuid(id)) throw new Error('Invalid id');
+    checkRole(data.role);
+    if (data.role === 'owner' && admin.role !== 'owner') throw new Error('Only an owner can make someone an owner.');
+    return updateTeamMember(id, data);
+  }, ['/admin/team']);
 }
 
 export async function deleteTeamMemberAction(id: string) {
-  try {
+  return adminAction(async (admin) => {
+    ownerOnly(admin);
+    if (!isUuid(id)) throw new Error('Invalid id');
+    if (id === admin.id) throw new Error('You cannot delete your own account.');
     await deleteTeamMember(id);
-    revalidatePath('/admin/team');
-    return { success: true };
-  } catch (error: any) {
-    console.error('deleteTeamMemberAction error:', error);
-    return { success: false, error: error.message || 'Failed to delete team member' };
-  }
+  }, ['/admin/team']);
 }
 
 export async function updateCompanySettingsAction(data: Partial<CompanySettingsRecord>) {
-  try {
-    const settings = await updateCompanySettings(data);
-    revalidatePath('/admin/settings');
-    revalidatePath('/admin/layout');
-    return { success: true, data: settings };
-  } catch (error: any) {
-    console.error('updateCompanySettingsAction error:', error);
-    return { success: false, error: error.message || 'Failed to update company settings' };
-  }
+  return adminAction(async (admin) => {
+    ownerOnly(admin);
+    return updateCompanySettings(data);
+  }, ['/admin/settings']);
 }

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { dbQuery } from "@/lib/db";
+import { rateLimit } from "@/lib/rateLimit";
 import {
   hashPassword,
   verifyPassword,
@@ -25,6 +26,11 @@ export async function loginAdminAction(
   prevState: LoginActionState | null,
   formData: FormData
 ): Promise<LoginActionState> {
+  // Slows password guessing: 10 attempts per 10 minutes per visitor.
+  if (!(await rateLimit("admin-login", 10, 600))) {
+    return { error: "Too many sign-in attempts. Wait a few minutes and try again." };
+  }
+
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const password = formData.get("password") as string;
 
