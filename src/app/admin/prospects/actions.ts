@@ -1,109 +1,47 @@
 'use server';
 
-import { getCurrentAdmin } from '@/lib/auth/adminAuth';
-
-import { revalidatePath } from 'next/cache';
+import { isUuid } from '@/lib/db';
+import { adminAction } from '@/lib/actions/guard';
 import {
-  createProspect,
-  updateProspect,
-  updateProspectStage,
-  deleteProspect,
-} from '@/lib/services/crmService';
-import { ProspectRecord, ProspectStage } from '@/types/database';
+  PROSPECT_STATUSES,
+  ProspectPatch,
+  importOutreachProspects,
+  patchOutreachProspect,
+  deleteOutreachProspects,
+} from '@/lib/services/outreachService';
 
-export interface ActionResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
+const MAX_ROWS = 5000;
+
+export async function importProspectsAction(rows: Record<string, string>[], batch: string) {
+  return adminAction(async () => {
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('No rows to import');
+    if (rows.length > MAX_ROWS) throw new Error(`Import at most ${MAX_ROWS} rows at a time`);
+    return { count: await importOutreachProspects(rows, String(batch ?? '').trim()) };
+  }, ['/admin/prospects']);
 }
 
-export async function createProspectAction(
-  input: FormData | Partial<ProspectRecord>
-): Promise<ActionResponse<ProspectRecord>> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: 'Unauthorized' };
-
-  try {
-    let payload: Partial<ProspectRecord> = {};
-
-    if (input instanceof FormData) {
-      const servicesRaw = input.get('services') as string | null;
-      payload = {
-        company: (input.get('company') as string) || '',
-        contact_person: (input.get('contact_person') as string) || '',
-        email: (input.get('email') as string) || '',
-        phone: (input.get('phone') as string) || undefined,
-        services: servicesRaw ? servicesRaw.split(',').map((s) => s.trim()).filter(Boolean) : [],
-        estimated_deal_value: parseFloat((input.get('estimated_deal_value') as string) || '0') || 0,
-        currency: (input.get('currency') as string) || 'BDT',
-        probability: parseInt((input.get('probability') as string) || '50', 10) || 50,
-        stage: ((input.get('stage') as ProspectStage) || 'qualified'),
-        expected_close_date: (input.get('expected_close_date') as string) || undefined,
-        notes: (input.get('notes') as string) || undefined,
-      };
-    } else {
-      payload = input;
+export async function updateProspectAction(id: string, patch: ProspectPatch) {
+  return adminAction(() => {
+    if (!isUuid(id)) throw new Error('Invalid id');
+    if (patch.status !== undefined && !(PROSPECT_STATUSES as readonly string[]).includes(patch.status)) {
+      throw new Error('Invalid status');
     }
-
-    if (!payload.company || !payload.contact_person || !payload.email) {
-      return { success: false, error: 'Company, Contact Person, and Email are required.' };
-    }
-
-    const prospect = await createProspect(payload);
-    revalidatePath('/admin/prospects');
-    return { success: true, data: prospect };
-  } catch (error: any) {
-    console.error('Error creating prospect:', error);
-    return { success: false, error: error.message || 'Failed to create prospect' };
-  }
+    return patchOutreachProspect(id, {
+      status: patch.status,
+      notes: patch.notes === undefined ? undefined : String(patch.notes).slice(0, 5000),
+      emailSent: patch.emailSent,
+      dmSent: patch.dmSent,
+      followUp1: patch.followUp1,
+      followUp2: patch.followUp2,
+      followUp3: patch.followUp3,
+      followUp4: patch.followUp4,
+    });
+  });
 }
 
-export async function updateProspectStageAction(
-  id: string,
-  stage: ProspectStage
-): Promise<ActionResponse<ProspectRecord>> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: 'Unauthorized' };
-
-  try {
-    const updated = await updateProspectStage(id, stage);
-    revalidatePath('/admin/prospects');
-    revalidatePath(`/admin/prospects/${id}`);
-    return { success: true, data: updated };
-  } catch (error: any) {
-    console.error('Error updating prospect stage:', error);
-    return { success: false, error: error.message || 'Failed to update prospect stage' };
-  }
-}
-
-export async function updateProspectAction(
-  id: string,
-  data: Partial<ProspectRecord>
-): Promise<ActionResponse<ProspectRecord>> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: 'Unauthorized' };
-
-  try {
-    const updated = await updateProspect(id, data);
-    revalidatePath('/admin/prospects');
-    revalidatePath(`/admin/prospects/${id}`);
-    return { success: true, data: updated };
-  } catch (error: any) {
-    console.error('Error updating prospect:', error);
-    return { success: false, error: error.message || 'Failed to update prospect' };
-  }
-}
-
-export async function deleteProspectAction(id: string): Promise<ActionResponse<boolean>> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: 'Unauthorized' };
-
-  try {
-    const deleted = await deleteProspect(id);
-    revalidatePath('/admin/prospects');
-    return { success: true, data: deleted };
-  } catch (error: any) {
-    console.error('Error deleting prospect:', error);
-    return { success: false, error: error.message || 'Failed to delete prospect' };
-  }
+export async function deleteProspectsAction(by: { ids?: string[]; batch?: string }) {
+  return adminAction(() => {
+    if (by.ids && !by.ids.every(isUuid)) throw new Error('Invalid id');
+    return deleteOutreachProspects({ ids: by.ids, batch: by.batch });
+  }, ['/admin/prospects']);
 }
