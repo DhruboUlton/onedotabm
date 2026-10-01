@@ -3,6 +3,7 @@
 import { isUuid } from '@/lib/db';
 import { adminAction, actorOf } from '@/lib/actions/guard';
 import { PROJECT_STATUSES, DELIVERABLE_STATUSES, ProjectStatus, DeliverableStatus } from '@/lib/projectMeta';
+import { getInvoiceByNumber } from '@/lib/services/invoiceService';
 import {
   ProjectInput,
   DeliverableChanges,
@@ -184,4 +185,20 @@ export async function saveTemplateAction(projectId: string, name: string) {
     if (!clean) throw new Error('Template name is required');
     return saveProjectAsTemplate(requireId(projectId), clean);
   }, [detail(projectId)]);
+}
+
+/** Live billing numbers for the invoice linked to a project; polled by the detail page. */
+export async function getProjectBillingAction(invoiceNumber: string) {
+  return adminAction(async () => {
+    const inv = await getInvoiceByNumber(String(invoiceNumber).trim());
+    if (!inv) return null;
+    return {
+      number: inv.invoice_number,
+      status: inv.status,
+      currency: inv.currency || 'BDT',
+      total: inv.total,
+      paid: inv.amount_paid,
+      due_date: inv.due_date,
+    };
+  });
 }

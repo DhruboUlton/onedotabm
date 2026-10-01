@@ -7,6 +7,8 @@ import type { QuotationDetail } from '@/lib/services/quotationService';
 import type { CompanySettingsRecord } from '@/types/database';
 import { formatMoney, formatDate, invoiceStatusMeta } from '@/lib/invoiceMeta';
 import { quotationStatusMeta } from '@/lib/quotationMeta';
+import type { ProjectDetail } from '@/lib/services/projectService';
+import { PROJECT_STATUS_META, calcProgress, countDone, deliverableStatusMeta, isDeliverableDone, type ProjectStatus } from '@/lib/projectMeta';
 
 const BRAND = '#1400FF';
 const DARK = '#111111';
@@ -130,13 +132,12 @@ function Footer({ company, number }: { company: CompanySettingsRecord; number: s
   );
 }
 
-function InvoicePdf({ invoice: inv, company, logo }: { invoice: InvoiceDetail; company: CompanySettingsRecord; logo: Buffer | null }) {
+function InvoicePage({ invoice: inv, company, logo }: { invoice: InvoiceDetail; company: CompanySettingsRecord; logo: Buffer | null }) {
   const cur = inv.currency || 'BDT';
   const balance = Math.max(0, inv.total - inv.amount_paid);
   const settled = inv.status === 'paid' || balance <= 0;
   return (
-    <Document title={`Invoice ${inv.invoice_number}`} author={company.company_name}>
-      <Page size="A4" style={s.page}>
+    <Page size="A4" style={s.page}>
         <Header company={company} logo={logo} title="INVOICE" number={inv.invoice_number} status={invoiceStatusMeta(inv.status).label} />
         <View style={s.rule} />
         <View style={s.split}>
@@ -208,6 +209,82 @@ function InvoicePdf({ invoice: inv, company, logo }: { invoice: InvoiceDetail; c
         <Block title="Payment instructions" text={inv.notes} />
         <Footer company={company} number={inv.invoice_number} />
       </Page>
+  );
+}
+
+function InvoicePdf(props: { invoice: InvoiceDetail; company: CompanySettingsRecord; logo: Buffer | null }) {
+  return (
+    <Document title={`Invoice ${props.invoice.invoice_number}`} author={props.company.company_name}>
+      <InvoicePage {...props} />
+    </Document>
+  );
+}
+
+function ProjectPage({ project, company, logo }: { project: ProjectDetail; company: CompanySettingsRecord; logo: Buffer | null }) {
+  const all = project.services.flatMap((sv) => sv.deliverables);
+  const pct = calcProgress(all);
+  return (
+    <Page size="A4" style={s.page}>
+      <Header company={company} logo={logo} title="PROJECT" number={project.project_name} status={PROJECT_STATUS_META[project.status as ProjectStatus]?.label ?? project.status} />
+      <View style={s.rule} />
+      <View style={s.split}>
+        <View style={{ maxWidth: '55%' }}>
+          <Text style={s.label}>Client{project.clients.length > 1 ? 's' : ''}</Text>
+          {project.clients.length === 0 ? <Text style={{ color: LIGHT }}>No client</Text> : null}
+          {project.clients.map((c) => (
+            <View key={c.id} style={{ marginBottom: 4 }}>
+              <Text style={[s.bold, { fontSize: 10 }]}>{c.name}</Text>
+              {c.business_name ? <Text>{c.business_name}</Text> : null}
+              {c.email ? <Text style={{ color: MUTED }}>{c.email}</Text> : null}
+            </View>
+          ))}
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <View style={s.metaCol}>
+            <Meta label="Start date" value={formatDate(project.start_date) || '-'} />
+            <Meta label="Deadline" value={formatDate(project.deadline) || '-'} />
+          </View>
+          <View style={s.metaCol}>
+            <Meta label="Progress" value={`${pct}%`} color={BRAND} />
+            <Meta label="Deliverables" value={`${countDone(all)}/${all.length}`} />
+          </View>
+        </View>
+      </View>
+      <View style={{ height: 5, backgroundColor: BORDER, borderRadius: 3, marginTop: 14 }}>
+        <View style={{ height: 5, width: `${pct}%`, backgroundColor: BRAND, borderRadius: 3 }} />
+      </View>
+      <Block title="Description" text={project.description} />
+      <View style={s.rule} />
+      <Text style={[s.bold, { fontSize: 12, marginBottom: 6 }]}>Services & Deliverables</Text>
+      {project.services.map((sv) => (
+        <View key={sv.id} style={{ marginTop: 10 }}>
+          <View wrap={false}>
+            <Text style={[s.bold, { fontSize: 10 }]}>{sv.title}</Text>
+            {sv.description ? <Text style={[s.body, { marginTop: 2 }]}>{sv.description}</Text> : null}
+          </View>
+          {sv.deliverables.map((d) => (
+            <View key={d.id} style={s.tr} wrap={false}>
+              <View style={s.cDesc}>
+                <Text>{d.title}</Text>
+                {d.notes ? <Text style={[s.body, { marginTop: 2 }]}>{d.notes}</Text> : null}
+              </View>
+              <Text style={{ width: 90, textAlign: 'right', color: isDeliverableDone(d.status) ? '#059669' : MUTED }}>
+                {deliverableStatusMeta(d.status).label}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ))}
+      <Footer company={company} number={project.project_name} />
+    </Page>
+  );
+}
+
+function ProjectPdf({ project, invoice, company, logo }: { project: ProjectDetail; invoice: InvoiceDetail | null; company: CompanySettingsRecord; logo: Buffer | null }) {
+  return (
+    <Document title={`Project ${project.project_name}`} author={company.company_name}>
+      <ProjectPage project={project} company={company} logo={logo} />
+      {invoice && <InvoicePage invoice={invoice} company={company} logo={logo} />}
     </Document>
   );
 }
@@ -282,6 +359,10 @@ export async function renderInvoicePdf(invoice: InvoiceDetail, company: CompanyS
 
 export async function renderQuotationPdf(quotation: QuotationDetail, company: CompanySettingsRecord): Promise<Buffer> {
   return renderToBuffer(<QuotationPdf quotation={quotation} company={company} logo={await loadLogo()} />);
+}
+
+export async function renderProjectPdf(project: ProjectDetail, invoice: InvoiceDetail | null, company: CompanySettingsRecord): Promise<Buffer> {
+  return renderToBuffer(<ProjectPdf project={project} invoice={invoice} company={company} logo={await loadLogo()} />);
 }
 
 export function pdfResponse(buffer: Buffer, filename: string): Response {
