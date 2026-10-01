@@ -271,7 +271,7 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
 
 export const DEFAULT_SETTINGS: CompanySettingsRecord = {
   company_name: 'OneDot ABM',
-  tagline: 'Strategic Marketing & Custom Web Development',
+  tagline: 'Built to Convert. Marketed to Scale.',
   email: 'billing@onedotabm.com',
   phone: '',
   address: '2397 Connecticut River Rd, Springfield, Vermont, 05156',
