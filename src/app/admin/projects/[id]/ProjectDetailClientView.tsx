@@ -47,6 +47,7 @@ import {
   setProjectClientBusinessAction,
   createServiceAction,
   updateServiceTitleAction,
+  updateServiceDescriptionAction,
   deleteServiceAction,
   createDeliverableAction,
   updateDeliverableAction,
@@ -520,13 +521,13 @@ function DeliverableRow({
             </div>
           </div>
           <div>
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>Description</label>
             <textarea
               value={local.notes}
               onChange={(e) => edit({ notes: e.target.value })}
               rows={2}
               className={textareaCls}
-              placeholder="Notes (visible to the client)…"
+              placeholder="Description (visible to the client)…"
             />
           </div>
           <div>
@@ -582,6 +583,8 @@ function ServiceCard({
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [description, setDescription] = useState(s.description);
   const debounce = useDebounced();
 
   function editTitle(v: string) {
@@ -595,15 +598,25 @@ function ServiceCard({
     });
   }
 
+  function editDescription(v: string) {
+    setDescription(v);
+    debounce(async () => {
+      const res = await updateServiceDescriptionAction(s.id, v);
+      if (res.success) onChange({ ...s, description: v });
+      else alert(res.error || 'Failed to save service description');
+    });
+  }
+
   async function addDeliverable() {
     if (!newTitle.trim()) return;
-    const res = await createDeliverableAction(s.id, newTitle.trim());
+    const res = await createDeliverableAction(s.id, newTitle.trim(), newDescription);
     if (!res.success || !res.data) {
       alert(res.error || 'Failed to add deliverable');
       return;
     }
     onChange({ ...s, deliverables: [...s.deliverables, res.data] });
     setNewTitle('');
+    setNewDescription('');
     setAdding(false);
   }
 
@@ -633,6 +646,16 @@ function ServiceCard({
         </button>
       </div>
 
+      <div className="px-4 pt-3">
+        <textarea
+          value={description}
+          onChange={(e) => editDescription(e.target.value)}
+          rows={1}
+          placeholder="Service description (optional)…"
+          className={`${textareaCls} text-xs`}
+        />
+      </div>
+
       <div className="p-3 space-y-2">
         {s.deliverables.map((d) => (
           <DeliverableRow
@@ -644,7 +667,7 @@ function ServiceCard({
         ))}
 
         {adding ? (
-          <div className="flex gap-2">
+          <div className="space-y-2">
             <input
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
@@ -654,17 +677,27 @@ function ServiceCard({
               }}
               autoFocus
               placeholder="Deliverable title…"
-              className={`${inputCls} flex-1`}
+              className={inputCls}
             />
-            <button onClick={addDeliverable} className="px-3 py-2 bg-[#1400FF] text-white text-sm rounded-lg hover:bg-[#0F00CC]">
-              Add
-            </button>
-            <button
-              onClick={() => setAdding(false)}
-              className="px-3 py-2 border border-[#E5E5E2] text-sm text-[#555555] rounded-lg hover:bg-[#F7F7F5]"
-            >
-              Cancel
-            </button>
+            <textarea
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              onKeyDown={(e) => e.key === 'Escape' && setAdding(false)}
+              rows={2}
+              placeholder="Description (optional)…"
+              className={textareaCls}
+            />
+            <div className="flex gap-2">
+              <button onClick={addDeliverable} className="px-3 py-2 bg-[#1400FF] text-white text-sm rounded-lg hover:bg-[#0F00CC]">
+                Add
+              </button>
+              <button
+                onClick={() => setAdding(false)}
+                className="px-3 py-2 border border-[#E5E5E2] text-sm text-[#555555] rounded-lg hover:bg-[#F7F7F5]"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         ) : (
           <button

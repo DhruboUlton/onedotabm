@@ -423,6 +423,13 @@ export async function updateServiceTitle(serviceId: string, title: string): Prom
   ]);
 }
 
+export async function updateServiceDescription(serviceId: string, description: string): Promise<void> {
+  await dbQuery(`UPDATE public.project_services SET description = $2, updated_at = NOW() WHERE id = $1`, [
+    serviceId,
+    description,
+  ]);
+}
+
 export async function deleteService(serviceId: string): Promise<void> {
   await dbQuery(`DELETE FROM public.project_services WHERE id = $1`, [serviceId]);
 }
@@ -433,12 +440,13 @@ export async function deleteService(serviceId: string): Promise<void> {
 
 const DELIVERABLE_COLUMNS = `id, service_id, title, type, status, notes, deadline::text, completed_at::text, position`;
 
-export async function createDeliverable(serviceId: string, title: string): Promise<DeliverableRecord> {
+// A deliverable's description is its notes column; the client sees it.
+export async function createDeliverable(serviceId: string, title: string, description = ''): Promise<DeliverableRecord> {
   const res = await dbQuery<DeliverableRecord>(
-    `INSERT INTO public.project_deliverables (service_id, title, position)
-     VALUES ($1, $2, (SELECT COUNT(*) FROM public.project_deliverables WHERE service_id = $1))
+    `INSERT INTO public.project_deliverables (service_id, title, notes, position)
+     VALUES ($1, $2, $3, (SELECT COUNT(*) FROM public.project_deliverables WHERE service_id = $1))
      RETURNING ${DELIVERABLE_COLUMNS}`,
-    [serviceId, title || 'New Deliverable']
+    [serviceId, title || 'New Deliverable', description]
   );
   return { ...res.rows[0], files: [] };
 }

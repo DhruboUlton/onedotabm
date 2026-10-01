@@ -16,6 +16,7 @@ import {
   getProjectClients,
   createService,
   updateServiceTitle,
+  updateServiceDescription,
   deleteService,
   createDeliverable,
   updateDeliverable,
@@ -122,8 +123,12 @@ export async function deleteServiceAction(serviceId: string) {
   return adminAction(() => deleteService(requireId(serviceId)));
 }
 
-export async function createDeliverableAction(serviceId: string, title: string) {
-  return adminAction(() => createDeliverable(requireId(serviceId), String(title).trim()));
+export async function updateServiceDescriptionAction(serviceId: string, description: string) {
+  return adminAction(() => updateServiceDescription(requireId(serviceId), String(description)));
+}
+
+export async function createDeliverableAction(serviceId: string, title: string, description = '') {
+  return adminAction(() => createDeliverable(requireId(serviceId), String(title).trim(), String(description).trim()));
 }
 
 export async function updateDeliverableAction(id: string, changes: DeliverableChanges) {
