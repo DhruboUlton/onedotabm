@@ -4,6 +4,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { SiteTracking } from "@/components/tracking/SiteTracking";
 
 /**
  * Individual demos render their own chrome — they stand in for separate
@@ -30,6 +31,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <SiteTracking />
       <Navbar />
       <main className="flex-1 flex flex-col pt-24 sm:pt-28">{children}</main>
       <Footer />
