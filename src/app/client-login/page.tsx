@@ -50,7 +50,7 @@ const portalModules = [
   },
 ];
 
-const PORTAL_URL = "https://dhruboduti.com/project-access";
+const PORTAL_URL = "/project-access";
 
 export default function ClientLoginPage() {
   return (
@@ -95,15 +95,12 @@ export default function ClientLoginPage() {
                     Client Portal Access
                   </h1>
                   <p className="text-xs text-[#555555] mt-1 leading-relaxed">
-                    The client portal runs on our founder&apos;s platform. Sign in there with the
-                    credentials issued at your project kickoff.
+                    Sign in with your email and the credential issued at your project kickoff.
                   </p>
                 </div>
 
                 <a
                   href={PORTAL_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="group flex items-center justify-between gap-3 w-full px-5 py-4 rounded-xl bg-[#111111] text-white hover:bg-[#222222] active:scale-[0.99] active:duration-75 transition-all"
                 >
                   <span className="text-sm font-medium">Continue to Client Portal</span>

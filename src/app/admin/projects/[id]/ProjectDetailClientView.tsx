@@ -526,7 +526,7 @@ function DeliverableRow({
               onChange={(e) => edit({ notes: e.target.value })}
               rows={2}
               className={textareaCls}
-              placeholder="Internal notes…"
+              placeholder="Notes (visible to the client)…"
             />
           </div>
           <div>

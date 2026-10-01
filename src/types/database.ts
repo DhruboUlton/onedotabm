@@ -101,6 +101,8 @@ export interface ClientRecord {
   contact_person: string;
   email: string;
   phone?: string | null;
+  /** What the client types, with their email, to open the project portal. */
+  access_code?: string | null;
   website?: string | null;
   address?: string | null;
   industry?: string | null;

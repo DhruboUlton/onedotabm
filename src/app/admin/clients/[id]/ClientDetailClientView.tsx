@@ -241,6 +241,17 @@ export function ClientDetailClientView({ client: initialClient }: ClientDetailCl
                 ? ` • ${businesses[0].name}${businesses.length > 1 ? ` +${businesses.length - 1} more` : ''}`
                 : ''}
             </p>
+            {client.access_code && (
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(client.access_code!)}
+                title="Copy portal credential"
+                className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-[#555555] hover:text-[#1400FF]"
+              >
+                Portal credential
+                <code className="font-mono font-bold text-[#1400FF]">{client.access_code}</code>
+              </button>
+            )}
           </div>
         </div>
 
