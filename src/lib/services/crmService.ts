@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { dbQuery, isUuid } from '@/lib/db';
+import { progressSql } from '@/lib/services/projectService';
 import { logActivity } from '@/lib/services/activityService';
 import type { ClientBusinessInput } from '@/lib/forms/clientBusinesses';
 import {
@@ -621,7 +622,7 @@ export async function getClients(options: GetClientsOptions = {}): Promise<Clien
     SELECT 
       c.*,
       p.full_name AS account_manager_name,
-      COALESCE((SELECT COUNT(*) FROM public.projects WHERE client_id = c.id), 0)::int AS project_count,
+      COALESCE((SELECT COUNT(*) FROM public.project_clients pc WHERE pc.client_id = c.id), 0)::int AS project_count,
       COALESCE((SELECT SUM(amount_paid) FROM public.invoices WHERE client_id = c.id), 0)::numeric AS total_revenue,
       COALESCE((
         SELECT array_agg(b.name ORDER BY b.position, b.created_at)
@@ -651,7 +652,7 @@ export const getClientById = cache(async (id: string): Promise<ClientDetailRecor
     SELECT 
       c.*,
       p.full_name AS account_manager_name,
-      COALESCE((SELECT COUNT(*) FROM public.projects WHERE client_id = c.id), 0)::int AS project_count,
+      COALESCE((SELECT COUNT(*) FROM public.project_clients pc WHERE pc.client_id = c.id), 0)::int AS project_count,
       COALESCE((SELECT SUM(amount_paid) FROM public.invoices WHERE client_id = c.id), 0)::numeric AS total_revenue
     FROM public.clients c
     LEFT JOIN public.profiles p ON c.account_manager = p.id
@@ -671,10 +672,11 @@ export const getClientById = cache(async (id: string): Promise<ClientDetailRecor
       [id]
     ),
     dbQuery<ProjectRecord>(
-      `SELECT pr.*, COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name 
-       FROM public.projects pr 
-       JOIN public.clients c ON pr.client_id = c.id 
-       WHERE pr.client_id = $1 
+      `SELECT pr.*, ${progressSql('pr')} AS progress,
+              COALESCE(NULLIF(c.company_name, ''), c.contact_person) AS client_name
+       FROM public.projects pr
+       JOIN public.project_clients pc ON pc.project_id = pr.id AND pc.client_id = $1
+       JOIN public.clients c ON c.id = pc.client_id
        ORDER BY pr.created_at DESC`,
       [id]
     ),

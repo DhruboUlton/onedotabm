@@ -1,4 +1,5 @@
 import { dbQuery } from '@/lib/db';
+import { progressSql } from '@/lib/services/projectService';
 import { ActivityRecord, AnalyticsOverview, LeadRecord, InvoiceRecord } from '@/types/database';
 
 export interface FinancialMetrics {
@@ -59,10 +60,10 @@ export async function getAnalyticsOverview(): Promise<AnalyticsOverview> {
         (SELECT count(*) FROM public.leads) AS total_leads,
         (SELECT count(*) FROM public.leads WHERE status = 'qualified') AS qualified_leads,
         (SELECT COALESCE(SUM(estimated_deal_value), 0) FROM public.prospects WHERE stage != 'lost') AS pipeline_value,
-        (SELECT count(*) FROM public.projects WHERE status IN ('planning', 'in_progress', 'review', 'revision')) AS active_projects,
+        (SELECT count(*) FROM public.projects WHERE status = 'active') AS active_projects,
         (SELECT count(*) FROM public.projects WHERE status = 'completed') AS completed_projects,
         (SELECT count(*) FROM public.projects) AS total_projects,
-        (SELECT COALESCE(AVG(progress), 0) FROM public.projects) AS avg_progress
+        (SELECT COALESCE(AVG(${progressSql('p')}), 0) FROM public.projects p) AS avg_progress
     `),
 
     // 2. Lead Sources Breakdown

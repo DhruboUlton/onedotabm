@@ -1,49 +1,28 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import {
-  getProjectById,
-  getClientsOptions,
-  getProfilesOptions,
-} from '@/lib/services/operationsService';
+import { getClientsOptions } from '@/lib/services/operationsService';
+import { getProjectDetail, getProjectTemplates } from '@/lib/services/projectService';
 import { ProjectDetailClientView } from './ProjectDetailClientView';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const project = await getProjectById(id);
-  if (!project) return { title: 'Project Not Found | OneDot ABM' };
-  return {
-    title: `${project.project_name} | Project Workspace`,
-    description: `Workspace details, checklist, and milestones for ${project.project_name}.`,
-  };
+  if (id === 'new') return { title: 'New Project | OneDot ABM' };
+  const project = await getProjectDetail(id);
+  return { title: project ? `${project.project_name} | Projects` : 'Project Not Found | OneDot ABM' };
 }
 
-export default async function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [project, clients, profiles] = await Promise.all([
-    getProjectById(id),
+  const isNew = id === 'new';
+  const [project, clients, templates] = await Promise.all([
+    isNew ? null : getProjectDetail(id),
     getClientsOptions(),
-    getProfilesOptions(),
+    getProjectTemplates(),
   ]);
 
-  if (!project) {
-    notFound();
-  }
+  if (!isNew && !project) notFound();
 
-  return (
-    <ProjectDetailClientView
-      project={project}
-      clients={clients}
-      profiles={profiles}
-    />
-  );
+  return <ProjectDetailClientView key={id} project={project} clients={clients} templates={templates} />;
 }

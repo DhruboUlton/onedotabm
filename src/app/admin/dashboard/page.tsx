@@ -32,7 +32,7 @@ export default async function AdminDashboardPage() {
       await Promise.all([
         dbQuery<{ count: string }>("SELECT COUNT(*) FROM public.leads"),
         dbQuery<{ count: string }>(
-          "SELECT COUNT(*) FROM public.projects WHERE status IN ('planning', 'in_progress', 'review', 'revision')"
+          "SELECT COUNT(*) FROM public.projects WHERE status = 'active'"
         ),
         dbQuery<{ count: string }>("SELECT COUNT(*) FROM public.clients"),
         dbQuery<{ sum: string | null }>(
